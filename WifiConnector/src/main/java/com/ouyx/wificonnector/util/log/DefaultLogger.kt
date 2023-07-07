@@ -1,8 +1,8 @@
-package com.microport.adbusb.util.log
+package com.ouyx.wificonnector.util.log
 
 import android.util.Log
 
-class DefaultLogger(
+internal class DefaultLogger(
     private val isShowLog: Boolean = true,
     private val isShowStackTrace: Boolean = true
 ) : ILogger {

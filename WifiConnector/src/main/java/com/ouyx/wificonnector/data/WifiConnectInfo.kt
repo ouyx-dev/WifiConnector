@@ -12,18 +12,17 @@ package com.ouyx.wificonnector.data
  * @author ouyx
  * @date 2023年07月06日 15时18分
  */
-data class WifiInfo(
+data class WifiConnectInfo(
     var name: String? = null,
     var ip: String? = null,
     var mac: String? = null,
     var gateWay: String? = null
 ) {
-    override fun toString(): String {
-        return "WifiInfo{" +
-                "name='" + name + '\'' +
-                ", ip='" + ip + '\'' +
-                ", mac='" + mac + '\'' +
-                ", gateWay='" + gateWay + '\'' +
-                '}'
-    }
+    override fun toString(): String = "WifiConnectInfo{" +
+            "name='" + name + '\'' +
+            ", ip='" + ip + '\'' +
+            ", mac='" + mac + '\'' +
+            ", gateWay='" + gateWay + '\'' +
+            '}'
+
 }

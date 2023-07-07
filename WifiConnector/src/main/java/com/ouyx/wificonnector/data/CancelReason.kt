@@ -5,12 +5,28 @@
  */
 package com.ouyx.wificonnector.data
 
+import java.util.concurrent.CancellationException
+
 
 /**
- * TODO:
+ *  Job 取消原因
  *
- * @author admin
+ * @author ouyx
  * @date 2023年07月07日 16时17分
  */
-class CancelReason {
+sealed class CancelReason : CancellationException() {
+    /**
+     * 主动取消Job
+     */
+    object CancelByChoice : CancelReason()
+
+    /**
+     * 因为异常而取消Job
+     */
+    object CancelByError : CancelReason()
+
+    /**
+     * 操作成功 而取消Job
+     */
+    class CancelBySuccess(val wifiConnectInfo: WifiConnectInfo) : CancelReason()
 }

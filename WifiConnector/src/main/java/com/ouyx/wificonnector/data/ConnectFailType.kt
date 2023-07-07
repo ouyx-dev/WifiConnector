@@ -7,10 +7,33 @@ package com.ouyx.wificonnector.data
 
 
 /**
- * TODO:
+ * 连接失败后原因
  *
- * @author admin
+ * @author ouyx
  * @date 2023年07月06日 15时21分
  */
-class ConnectFailType {
+sealed class ConnectFailType {
+
+    /**
+     * 超时未连接
+     */
+    object ConnectTimeout : ConnectFailType()
+
+    /**
+     * 权限不够
+     */
+    object PermissionNotEnough : ConnectFailType()
+
+    /**
+     * 主动取消
+     */
+    object CancelByChoice : ConnectFailType()
+
+
+    /**
+     * 正在 连接
+     */
+    object ConnectingInProgress : ConnectFailType()
+
+
 }
