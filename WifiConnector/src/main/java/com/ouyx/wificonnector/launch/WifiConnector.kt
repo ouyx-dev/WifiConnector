@@ -5,44 +5,28 @@
  */
 package com.ouyx.wificonnector.launch
 
+import android.app.Application
+import android.content.Context
+import android.net.wifi.WifiManager
 import com.ouyx.wificonnector.callback.WifiConnectCallback
-import com.ouyx.wificonnector.data.CancelReason
-import com.ouyx.wificonnector.data.ConnectFailType
-import com.ouyx.wificonnector.util.log.DefaultLogger
-import kotlinx.coroutines.*
-import java.util.concurrent.atomic.AtomicBoolean
+import com.ouyx.wificonnector.callback.WifiScanCallback
+import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
+import com.ouyx.wificonnector.core.request.WifiConnectRequest
+import com.ouyx.wificonnector.util.DefaultLogger
 
 
 /**
- *  入口类，用于连接WIFI
+ * Wifi连接 入口
  *
  * @author ouyx
- * @date 2023年07月06日 14时15分
+ * @date 2023年07月10日 13时55分
  */
-class WifiConnector {
-    private val TAG = WifiConnector::class.java.simpleName
-    private val log = DefaultLogger()
+class WifiConnector private constructor() {
+    lateinit var mApplication: Application
 
-    private val mainScope = MainScope()
+    lateinit var mWifiManager: WifiManager
 
-    private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private val defaultScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-    internal fun getMainScope() = mainScope
-
-    internal fun getIOScope() = ioScope
-
-    internal fun getDefaultScope() = defaultScope
-
-    private var mConnectJob: Job? = null
-
-    private var mConnectCallback: WifiConnectCallback? = null
-
-    private var mConnectTime = 5000L
-
-    private val isConnecting = AtomicBoolean(false)
-
+    lateinit var mDispatcher: WifiRequestDispatcher
 
     companion object {
         @Volatile
@@ -53,85 +37,31 @@ class WifiConnector {
             }
     }
 
-
-    enum class WifiCipherType {
-        WEP, WPA, NOPASS,
+    fun init(application: Application) {
+        mApplication = application
+        mWifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        mDispatcher = WifiRequestDispatcher.getInstance()
     }
 
-    /**
-     * 连接WIFI
-     *
-     * @param ssid
-     * @param pwd
-     * @param cipherType
-     *
-     */
-    fun startConnect(ssid: String, pwd: String, cipherType: WifiCipherType = WifiCipherType.WPA, connectCallback: WifiConnectCallback.() -> Unit) {
-        mConnectCallback = WifiConnectCallback()
-        mConnectCallback?.connectCallback()
 
-        if (isConnecting.get()) {
-            mConnectCallback?.callConnectFail(ConnectFailType.ConnectingInProgress)
+    fun startConnect(
+        ssid: String,
+        pwd: String,
+        cipherType: WifiConnectRequest.WifiCipherType = WifiConnectRequest.WifiCipherType.WPA,
+        connectCallback: WifiConnectCallback.() -> Unit
+    ) {
+        if (!::mWifiManager.isInitialized) {
+            DefaultLogger.error(message = "WifiConnector未初始化，请先调用WifiConnector.init()")
             return
         }
+        mDispatcher.startConnect(ssid, pwd, cipherType, connectCallback)
+    }
 
-        mConnectJob = ioScope.launch {
-            withTimeout(mConnectTime) {
-                isConnecting.set(true)
-                mConnectCallback?.callConnectStart()
-
-                delay(mConnectTime)
-            }
+    fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
+        if (!::mWifiManager.isInitialized) {
+            DefaultLogger.error(message = "WifiConnector未初始化，请先调用WifiConnector.init()")
+            return
         }
-        mConnectJob?.invokeOnCompletion {
-            isConnecting.set(false)
-            when (it) {
-                is TimeoutCancellationException -> {
-                    log.debug(TAG, "超时而取消")
-                    mConnectCallback?.callConnectFail(ConnectFailType.ConnectTimeout)
-                }
-                is CancelReason -> {
-                    when (it) {
-                        CancelReason.CancelByChoice -> {
-                            log.debug(TAG, "用户主动取消")
-                            mConnectCallback?.callConnectFail(ConnectFailType.CancelByChoice)
-                        }
-                        CancelReason.CancelByError -> {
-                            log.debug(TAG, "运行异常而取消")
-                        }
-                        is CancelReason.CancelBySuccess -> {
-                            log.debug(TAG, "连接成功而取消任务：" + it.wifiConnectInfo.toString())
-                            mConnectCallback?.callConnectSuccess(it.wifiConnectInfo)
-                        }
-                    }
-                }
-            }
-        }
+        mDispatcher.startScan(scanCallback)
     }
-
-    /**
-     * 停止连接WIFI
-     */
-    fun stopConnect() {
-        mConnectJob?.cancel(CancelReason.CancelByChoice)
-    }
-
-
-    /**
-     *  回收所有资源
-     */
-    fun closeAll() {
-        mainScope.cancel()
-        ioScope.cancel()
-        defaultScope.cancel()
-        INSTANCE = null
-    }
-
-    /**
-     * 解除所有CallBack
-     */
-    fun removeAllCallBack() {
-        mConnectCallback = null
-    }
-
 }

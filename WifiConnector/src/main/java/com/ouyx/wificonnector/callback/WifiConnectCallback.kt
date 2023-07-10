@@ -5,9 +5,10 @@
  */
 package com.ouyx.wificonnector.callback
 
+import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
 import com.ouyx.wificonnector.data.ConnectFailType
 import com.ouyx.wificonnector.data.WifiConnectInfo
-import com.ouyx.wificonnector.launch.WifiConnector
+import com.ouyx.wificonnector.core.request.WifiConnectRequest
 import kotlinx.coroutines.launch
 
 
@@ -19,7 +20,7 @@ import kotlinx.coroutines.launch
  */
 class WifiConnectCallback {
 
-    private val mainScope = WifiConnector.getInstance().getMainScope()
+    private val mainScope = WifiRequestDispatcher.getInstance().getMainScope()
 
 
     private var start: (() -> Unit)? = null

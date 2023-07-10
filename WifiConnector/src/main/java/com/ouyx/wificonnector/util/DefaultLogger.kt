@@ -1,45 +1,46 @@
-package com.ouyx.wificonnector.util.log
+package com.ouyx.wificonnector.util
 
 import android.util.Log
 
-internal class DefaultLogger(
-    private val isShowLog: Boolean = true,
-    private val isShowStackTrace: Boolean = true
-) : ILogger {
-    override fun isDebugModel(): Boolean {
-        return true
+object DefaultLogger {
+    private const val defaultTag = "WifiConnector"
+    private var isShowLog = true
+    private var isShowStackTrace = true
+
+    fun setDebug(isDebug: Boolean) {
+        isShowLog = isDebug
     }
 
-    override fun debug(tag: String, message: String) {
-        if (isDebugModel() && isShowLog) {
+    fun debug(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
             Log.d(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    override fun info(tag: String, message: String) {
-        if (isDebugModel() && isShowLog) {
+    fun info(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
             Log.i(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    override fun warning(tag: String, message: String) {
-        if (isDebugModel() && isShowLog) {
+    fun warning(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
             Log.w(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    override fun error(tag: String, message: String) {
-        if (isDebugModel() && isShowLog) {
+    fun error(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
             Log.e(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    override fun error(tag: String, message: String, e: Throwable?) {
-        if (isDebugModel() && isShowLog) {
+    fun error(tag: String = defaultTag, message: String, e: Throwable?) {
+        if (isShowLog) {
             Log.e(tag, message, e)
         }
     }
