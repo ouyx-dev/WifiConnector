@@ -2,5 +2,14 @@
 <manifest xmlns:tools="http://schemas.android.com/tools"
         xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--普通权限-->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+
+    <!--危险权限-->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
 
 </manifest>

@@ -8,6 +8,7 @@ package com.ouyx.wificonnector.core.request
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.data.CancelReason
 import com.ouyx.wificonnector.data.ConnectFailType
+import com.ouyx.wificonnector.data.WifiCipherType
 import com.ouyx.wificonnector.util.DefaultLogger
 import kotlinx.coroutines.*
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,9 +41,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     }
 
 
-    enum class WifiCipherType {
-        WEP, WPA, NOPASS,
-    }
 
     /**
      * 连接WIFI
@@ -52,10 +50,8 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      * @param cipherType
      *
      */
-    fun startConnect(ssid: String, pwd: String, cipherType: WifiCipherType = WifiCipherType.WPA, connectCallback: WifiConnectCallback.() -> Unit) {
-        mConnectCallback = WifiConnectCallback()
-        mConnectCallback?.connectCallback()
-
+    fun startConnect(ssid: String, pwd: String, cipherType: WifiCipherType, connectCallback: WifiConnectCallback) {
+        mConnectCallback = connectCallback
         if (isConnecting.get()) {
             mConnectCallback?.callConnectFail(ConnectFailType.ConnectingInProgress)
             return
@@ -96,8 +92,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     }
 
 
-
-
     /**
      * 主动停止连接 WIFI
      */
@@ -105,26 +99,21 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         mConnectJob?.cancel(CancelReason.CancelByChoice)
     }
 
-    /**
-     *  回收所有资源
-     */
-    fun closeAll() {
-
-    }
 
     /**
-     * 解除所有CallBack
+     * 移除回调
      */
-    fun removeAllCallBack() {
+    override fun removeCallback() {
         mConnectCallback = null
     }
 
-    override fun removeCallback() {
-        TODO("Not yet implemented")
-    }
-
+    /**
+     *  回收所有资源
+     */
     override fun release() {
-        TODO("Not yet implemented")
+        mConnectJob?.cancel()
+        mConnectCallback = null
+        INSTANCE = null
     }
 
 

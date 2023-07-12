@@ -5,13 +5,19 @@
  */
 package com.ouyx.wificonnector.core.request
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import androidx.core.app.ActivityCompat
 import com.ouyx.wificonnector.callback.WifiScanCallback
+import com.ouyx.wificonnector.data.ScanFailType
 import com.ouyx.wificonnector.util.DefaultLogger
+import com.ouyx.wificonnector.util.WifiUtil
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -23,6 +29,7 @@ import com.ouyx.wificonnector.util.DefaultLogger
 class WifiScanRequest : BaseRequest() {
 
     private var mScanCallback: WifiScanCallback? = null
+    private val isScanning = AtomicBoolean(false)
 
     companion object {
         @Volatile
@@ -33,47 +40,76 @@ class WifiScanRequest : BaseRequest() {
             }
     }
 
-    private val wifiScanReceiver = object : BroadcastReceiver() {
+    private val mWifiScanReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) {
                 val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
                 if (success) {
                     scanSuccess()
-                } else {
-                    scanFailure()
                 }
             }
-
         }
     }
 
-
     init {
         val intentFilter = IntentFilter().apply { addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) }
-        getApplication().registerReceiver(wifiScanReceiver, intentFilter)
+        getApplication().registerReceiver(mWifiScanReceiver, intentFilter)
     }
 
 
     fun startScan(scanCallback: WifiScanCallback) {
         mScanCallback = scanCallback
 
-        getWifiManager().startScan()
+        if (isScanning.get()) {
+            scanCallback.callScanFail(ScanFailType.ScanningInProgress)
+            return
+        }
+
+        if (!WifiUtil.isPermissionScan(getApplication())) {
+            scanCallback.callScanFail(ScanFailType.PermissionNotGranted)
+            return
+        }
+
+        if (!WifiUtil.isLocationEnabled(getApplication())) {
+            scanCallback.callScanFail(ScanFailType.LocationNotEnable)
+            return
+        }
+
+        if (!getWifiManager().startScan()) {
+            mScanCallback?.callScanFail(ScanFailType.StartScanError)
+        } else {
+            isScanning.set(true)
+            mScanCallback?.callScanStart()
+        }
+
     }
 
+    /**
+     *  移除 callback
+     */
     override fun removeCallback() {
-        TODO("Not yet implemented")
+        mScanCallback = null
+
     }
 
+    /**
+     * 回收 所有资源
+     */
     override fun release() {
-        TODO("Not yet implemented")
+        mScanCallback = null
+        getApplication().unregisterReceiver(mWifiScanReceiver)
+        INSTANCE = null
     }
 
-
-    private fun scanFailure() {
-        DefaultLogger.debug(message = "scan fail!")
-    }
 
     private fun scanSuccess() {
-        DefaultLogger.debug(message = "scan success!")
+        isScanning.set(false)
+
+        if (ActivityCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+        mScanCallback?.callScanSuccess(getWifiManager().scanResults)
+
     }
+
 }

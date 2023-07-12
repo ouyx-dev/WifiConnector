@@ -19,4 +19,21 @@ sealed class ScanFailType {
      */
     object PermissionNotGranted : ScanFailType()
 
+    /**
+     * 位置信息未开启
+     */
+    object LocationNotEnable : ScanFailType()
+
+    /**
+     * 由于短时间扫描过多，扫描请求可能遭到节流。
+     * 设备处于空闲状态，扫描已停用。
+     *  WLAN 硬件报告扫描失败。
+     */
+    object StartScanError : ScanFailType()
+
+    /**
+     * 正在扫描
+     */
+    object ScanningInProgress : ScanFailType()
+
 }

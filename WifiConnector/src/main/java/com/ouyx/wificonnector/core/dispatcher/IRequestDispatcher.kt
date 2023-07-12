@@ -17,13 +17,19 @@ import com.ouyx.wificonnector.core.request.WifiConnectRequest
  * @date 2023年07月10日 15时26分
  */
 interface IRequestDispatcher {
+    /**
+     * 连接指定WIFI
+     */
     fun startConnect(
         ssid: String,
         pwd: String,
-        cipherType: WifiConnectRequest.WifiCipherType = WifiConnectRequest.WifiCipherType.WPA,
+        cipherType: WifiConnectRequest.WifiCipherType = WifiConnectRequest.WifiCipherType.WPA2,
         connectCallback: WifiConnectCallback.() -> Unit
     )
 
+    /**
+     *  扫描 获取WIFI 列表
+     */
     fun startScan(scanCallback: WifiScanCallback.() -> Unit)
 
 }

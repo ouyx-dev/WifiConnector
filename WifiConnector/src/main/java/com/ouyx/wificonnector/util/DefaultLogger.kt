@@ -2,7 +2,7 @@ package com.ouyx.wificonnector.util
 
 import android.util.Log
 
-object DefaultLogger {
+internal object DefaultLogger {
     private const val defaultTag = "WifiConnector"
     private var isShowLog = true
     private var isShowStackTrace = true

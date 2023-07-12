@@ -12,6 +12,7 @@ import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
 import com.ouyx.wificonnector.core.request.WifiConnectRequest
+import com.ouyx.wificonnector.data.WifiCipherType
 import com.ouyx.wificonnector.util.DefaultLogger
 
 
@@ -47,7 +48,7 @@ class WifiConnector private constructor() {
     fun startConnect(
         ssid: String,
         pwd: String,
-        cipherType: WifiConnectRequest.WifiCipherType = WifiConnectRequest.WifiCipherType.WPA,
+        cipherType: WifiCipherType = WifiCipherType.WPA2,
         connectCallback: WifiConnectCallback.() -> Unit
     ) {
         if (!::mWifiManager.isInitialized) {
@@ -63,5 +64,16 @@ class WifiConnector private constructor() {
             return
         }
         mDispatcher.startScan(scanCallback)
+    }
+
+
+
+
+    /**
+     * 回收所有资源
+     */
+    fun release() {
+        mDispatcher.release()
+        INSTANCE = null
     }
 }

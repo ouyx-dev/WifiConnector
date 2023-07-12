@@ -1,57 +1,54 @@
-/*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
- * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
- */
 package com.ouyx.wificonnector
 
 import android.util.Log
 
-
-/**
- * log工具
- *
- * @author ouyx
- * @date 2023年07月06日 17时44分
- */
-object MyLogger {
-
-    private const val tag = "ouyx"
-    private var isLogger = true
+internal object DefaultLogger {
+    private const val defaultTag = "ouyx"
+    private var isShowLog = true
     private var isShowStackTrace = true
 
-    fun d(msg: String?) {
-        if (isLogger && msg != null) {
+    fun setDebug(isDebug: Boolean) {
+        isShowLog = isDebug
+    }
+
+    fun debug(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
-            Log.d(tag, msg + getExtInfo(stackTraceElement))
+            Log.d(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    fun i(msg: String?) {
-        if (isLogger && msg != null) {
+    fun info(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
-            Log.i(tag, msg + getExtInfo(stackTraceElement))
+            Log.i(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    fun e(msg: String?) {
-        if (isLogger && msg != null) {
+    fun warning(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
-            Log.e(tag, msg + getExtInfo(stackTraceElement))
+            Log.w(tag, message + getExtInfo(stackTraceElement))
         }
     }
 
-    fun w(msg: String?) {
-        if (isLogger && msg != null) {
+    fun error(tag: String = defaultTag, message: String) {
+        if (isShowLog) {
             val stackTraceElement = Thread.currentThread().stackTrace[3]
-            Log.w(tag, msg + getExtInfo(stackTraceElement))
+            Log.e(tag, message + getExtInfo(stackTraceElement))
+        }
+    }
+
+    fun error(tag: String = defaultTag, message: String, e: Throwable?) {
+        if (isShowLog) {
+            Log.e(tag, message, e)
         }
     }
 
 
     private fun getExtInfo(stackTraceElement: StackTraceElement): String {
         val separator = " & "
-        val sb = StringBuilder("\t[")
+        val sb = StringBuilder("[")
         if (isShowStackTrace) {
             val threadName = Thread.currentThread().name
             val fileName = stackTraceElement.fileName
@@ -67,4 +64,5 @@ object MyLogger {
         sb.append(" ] ")
         return sb.toString()
     }
+
 }

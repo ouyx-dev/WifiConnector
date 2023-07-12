@@ -6,10 +6,11 @@
 package com.ouyx.wificonnector.util
 
 import android.Manifest
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
-import androidx.core.content.ContextCompat
 
 
 /**
@@ -24,37 +25,43 @@ object WifiUtil {
      * 判断是否拥有[permission]权限
      * @return true = 拥有该权限
      */
-    private fun isPermission(context: Context?, permission: String): Boolean {
-        return context?.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    private fun isPermissionScan(application: Application?, permission: String): Boolean {
+        return application?.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
     /**
-     * 判断是否拥有WIFI 扫描和连接
+     * 判断是否拥有WIFI 扫描
+     * 参考https://developer.android.com/guide/topics/connectivity/wifi-scan?hl=zh-cn
      * @return true = 拥有该权限
      */
-    fun isPermission(context: Context?): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
-            isPermission(context?.applicationContext,
-                Manifest.permission.ACCESS_FINE_LOCATION) &&
-            isPermission(context?.applicationContext,
-                Manifest.permission.ACCESS_COARSE_LOCATION) &&
-            isPermission(context?.applicationContext,
-                Manifest.permission.BLUETOOTH_SCAN) &&
-            isPermission(context?.applicationContext,
-                Manifest.permission.BLUETOOTH_ADVERTISE) &&
-            isPermission(context?.applicationContext,
-                Manifest.permission.BLUETOOTH_CONNECT)) {
-            return true
-        } else if (isPermission(context?.applicationContext,
-                Manifest.permission.ACCESS_FINE_LOCATION) &&
-            isPermission(context?.applicationContext,
-                Manifest.permission.ACCESS_COARSE_LOCATION)) {
-            return true
+    fun isPermissionScan(application: Application?): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            //Android 10 or above
+            return isPermissionScan(application, Manifest.permission.ACCESS_FINE_LOCATION)
+                    && isPermissionScan(application, Manifest.permission.CHANGE_WIFI_STATE)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            //Android 9.0 or above
+            return (isPermissionScan(application, Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    isPermissionScan(application, Manifest.permission.ACCESS_COARSE_LOCATION))
+                    && isPermissionScan(application, Manifest.permission.CHANGE_WIFI_STATE)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            //Android 8.0 or above
+            return (isPermissionScan(application, Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    isPermissionScan(application, Manifest.permission.ACCESS_COARSE_LOCATION) ||
+                    isPermissionScan(application, Manifest.permission.CHANGE_WIFI_STATE))
         }
-        return false
+        return true
     }
 
 
+    /**
+     *  判断位置信息是否开启
+     */
+    fun isLocationEnabled(context: Application): Boolean {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+    }
 
 
 }

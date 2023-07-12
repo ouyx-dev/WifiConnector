@@ -47,33 +47,36 @@ class WifiRequestDispatcher : IRequestDispatcher {
         cipherType: WifiConnectRequest.WifiCipherType,
         connectCallback: WifiConnectCallback.() -> Unit
     ) {
-        TODO("Not yet implemented")
+        val wifiConnectCallback = WifiConnectCallback()
+        connectCallback.invoke(wifiConnectCallback)
+
+        WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, wifiConnectCallback)
     }
 
     override fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
         val wifiScanCallback = WifiScanCallback()
         scanCallback.invoke(wifiScanCallback)
-
         WifiScanRequest.getInstance().startScan(wifiScanCallback)
-
     }
 
 
     /**
      *  回收所有资源
      */
-    fun closeAll() {
+    fun release() {
+        WifiScanRequest.getInstance().release()
+
         mainScope.cancel()
         ioScope.cancel()
         defaultScope.cancel()
+        INSTANCE = null
     }
 
     /**
      * 解除所有 CallBack
      */
     fun removeAllCallBack() {
-        //todo 所有request 移除callback
+        WifiScanRequest.getInstance().removeCallback()
     }
-
 
 }
