@@ -15,7 +15,6 @@ import android.net.wifi.WifiManager
 import androidx.core.app.ActivityCompat
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.data.ScanFailType
-import com.ouyx.wificonnector.util.DefaultLogger
 import com.ouyx.wificonnector.util.WifiUtil
 import java.util.concurrent.atomic.AtomicBoolean
 

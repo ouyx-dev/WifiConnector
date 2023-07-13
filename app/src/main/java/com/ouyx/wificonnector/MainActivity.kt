@@ -24,20 +24,23 @@ class MainActivity : BaseActivity() {
         WifiConnector.getInstance().init(application)
 
         viewBinding.btnConnect.setOnClickListener {
-            WifiConnector.getInstance().startConnect("ouyx", "123456") {
-                onConnectStart {
-                    DefaultLogger.info(message = "onConnectStart")
-                    findViewById<TextView>(R.id.txt_log).text = "onConnectStart"
+            requestPermission(arrayOf( Manifest.permission.CHANGE_WIFI_STATE), agree = {
+                WifiConnector.getInstance().startConnect("ouyx", "123456789") {
+                    onConnectStart {
+                        DefaultLogger.info(message = "onConnectStart")
+                        findViewById<TextView>(R.id.txt_log).text = "onConnectStart"
+                    }
+                    onConnectSuccess {
+                        DefaultLogger.info(message = "onConnectSuccess")
+                        findViewById<TextView>(R.id.txt_log).text = "onConnectSuccess $it"
+                    }
+                    onConnectFail {
+                        DefaultLogger.info(message = "onConnectFail $it")
+                        findViewById<TextView>(R.id.txt_log).text = "onConnectFail $it"
+                    }
                 }
-                onConnectSuccess {
-                    DefaultLogger.info(message = "onConnectSuccess")
-                    findViewById<TextView>(R.id.txt_log).text = "onConnectSuccess $it"
-                }
-                onConnectFail {
-                    DefaultLogger.info(message = "onConnectFail $it")
-                    findViewById<TextView>(R.id.txt_log).text = "onConnectFail $it"
-                }
-            }
+            })
+
         }
 
 

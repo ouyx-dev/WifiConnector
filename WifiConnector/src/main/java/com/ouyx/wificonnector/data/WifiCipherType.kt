@@ -13,5 +13,5 @@ package com.ouyx.wificonnector.data
  * @date 2023年07月12日 11时21分
  */
 enum class WifiCipherType {
-    WPA2, WP3, NO
+    WEP, WPA, NO_PASS
 }

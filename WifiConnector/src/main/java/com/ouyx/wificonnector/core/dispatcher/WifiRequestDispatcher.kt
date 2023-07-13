@@ -9,6 +9,7 @@ import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.core.request.WifiConnectRequest
 import com.ouyx.wificonnector.core.request.WifiScanRequest
+import com.ouyx.wificonnector.data.WifiCipherType
 import kotlinx.coroutines.*
 
 
@@ -44,7 +45,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
     override fun startConnect(
         ssid: String,
         pwd: String,
-        cipherType: WifiConnectRequest.WifiCipherType,
+        cipherType: WifiCipherType,
         connectCallback: WifiConnectCallback.() -> Unit
     ) {
         val wifiConnectCallback = WifiConnectCallback()

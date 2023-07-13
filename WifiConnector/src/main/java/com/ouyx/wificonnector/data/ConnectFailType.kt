@@ -36,4 +36,16 @@ sealed class ConnectFailType {
     object ConnectingInProgress : ConnectFailType()
 
 
+    /**
+     * 指定连接的SSID 已经连接
+     */
+    object SsidConnected : ConnectFailType()
+
+    /**
+     * WIFI  没有开启
+     */
+    object WifiNotEnable :ConnectFailType()
+
+
+
 }

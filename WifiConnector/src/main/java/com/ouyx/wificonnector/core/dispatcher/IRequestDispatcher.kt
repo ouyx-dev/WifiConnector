@@ -7,7 +7,7 @@ package com.ouyx.wificonnector.core.dispatcher
 
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
-import com.ouyx.wificonnector.core.request.WifiConnectRequest
+import com.ouyx.wificonnector.data.WifiCipherType
 
 
 /**
@@ -23,7 +23,7 @@ interface IRequestDispatcher {
     fun startConnect(
         ssid: String,
         pwd: String,
-        cipherType: WifiConnectRequest.WifiCipherType = WifiConnectRequest.WifiCipherType.WPA2,
+        cipherType: WifiCipherType = WifiCipherType.WEP,
         connectCallback: WifiConnectCallback.() -> Unit
     )
 

@@ -25,33 +25,40 @@ object WifiUtil {
      * 判断是否拥有[permission]权限
      * @return true = 拥有该权限
      */
-    private fun isPermissionScan(application: Application?, permission: String): Boolean {
+    private fun isPermission(application: Application?, permission: String): Boolean {
         return application?.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
     }
 
     /**
-     * 判断是否拥有WIFI 扫描
+     * 判断是否有权限进行WIFI 扫描
      * 参考https://developer.android.com/guide/topics/connectivity/wifi-scan?hl=zh-cn
      * @return true = 拥有该权限
      */
     fun isPermissionScan(application: Application?): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             //Android 10 or above
-            return isPermissionScan(application, Manifest.permission.ACCESS_FINE_LOCATION)
-                    && isPermissionScan(application, Manifest.permission.CHANGE_WIFI_STATE)
+            return isPermission(application, Manifest.permission.ACCESS_FINE_LOCATION)
+                    && isPermission(application, Manifest.permission.CHANGE_WIFI_STATE)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             //Android 9.0 or above
-            return (isPermissionScan(application, Manifest.permission.ACCESS_FINE_LOCATION) ||
-                    isPermissionScan(application, Manifest.permission.ACCESS_COARSE_LOCATION))
-                    && isPermissionScan(application, Manifest.permission.CHANGE_WIFI_STATE)
+            return (isPermission(application, Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    isPermission(application, Manifest.permission.ACCESS_COARSE_LOCATION))
+                    && isPermission(application, Manifest.permission.CHANGE_WIFI_STATE)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             //Android 8.0 or above
-            return (isPermissionScan(application, Manifest.permission.ACCESS_FINE_LOCATION) ||
-                    isPermissionScan(application, Manifest.permission.ACCESS_COARSE_LOCATION) ||
-                    isPermissionScan(application, Manifest.permission.CHANGE_WIFI_STATE))
+            return (isPermission(application, Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    isPermission(application, Manifest.permission.ACCESS_COARSE_LOCATION) ||
+                    isPermission(application, Manifest.permission.CHANGE_WIFI_STATE))
         }
         return true
     }
+
+    /**
+     * 判断是否有权限 调用WIFI
+     */
+    fun isPermissionConnect(application: Application?) :Boolean = isPermission(application,Manifest.permission.ACCESS_FINE_LOCATION)
+            && isPermission(application,Manifest.permission.ACCESS_WIFI_STATE)
+            && isPermission(application,Manifest.permission.CHANGE_WIFI_STATE)
 
 
     /**
