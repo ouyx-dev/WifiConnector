@@ -24,6 +24,7 @@ interface IRequestDispatcher {
         ssid: String,
         pwd: String,
         cipherType: WifiCipherType = WifiCipherType.WEP,
+        timeoutInMillis: Long,
         connectCallback: WifiConnectCallback.() -> Unit
     )
 

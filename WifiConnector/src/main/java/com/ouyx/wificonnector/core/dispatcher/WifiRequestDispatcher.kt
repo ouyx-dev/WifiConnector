@@ -46,12 +46,13 @@ class WifiRequestDispatcher : IRequestDispatcher {
         ssid: String,
         pwd: String,
         cipherType: WifiCipherType,
+        timeoutInMillis: Long,
         connectCallback: WifiConnectCallback.() -> Unit
     ) {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
 
-        WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, wifiConnectCallback)
+        WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
     }
 
     override fun startScan(scanCallback: WifiScanCallback.() -> Unit) {

@@ -11,6 +11,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Build
+import java.net.InetAddress
+import java.net.UnknownHostException
 
 
 /**
@@ -56,9 +58,9 @@ object WifiUtil {
     /**
      * 判断是否有权限 调用WIFI
      */
-    fun isPermissionConnect(application: Application?) :Boolean = isPermission(application,Manifest.permission.ACCESS_FINE_LOCATION)
-            && isPermission(application,Manifest.permission.ACCESS_WIFI_STATE)
-            && isPermission(application,Manifest.permission.CHANGE_WIFI_STATE)
+    fun isPermissionConnect(application: Application?): Boolean = isPermission(application, Manifest.permission.ACCESS_FINE_LOCATION)
+            && isPermission(application, Manifest.permission.ACCESS_WIFI_STATE)
+            && isPermission(application, Manifest.permission.CHANGE_WIFI_STATE)
 
 
     /**
@@ -71,4 +73,35 @@ object WifiUtil {
     }
 
 
+    /**
+     *  判断String 是否 都是 Hex 字符
+     */
+     fun isHex(key: String): Boolean {
+        for (i in key.length - 1 downTo 0) {
+            val c = key[i]
+            if (!(c in '0'..'9' || c in 'A'..'F' || (c in 'a'..'f'))) {
+                return false
+            }
+        }
+        return true
+    }
+
+    /**
+     * Convert a IPv4 address from an integer to an InetAddress.
+     *
+     * @param hostAddress an int corresponding to the IPv4 address in network byte order
+     */
+    fun intToInetAddress(hostAddress: Int): InetAddress? {
+        val addressBytes = byteArrayOf(
+            (0xff and hostAddress).toByte(),
+            (0xff and (hostAddress shr 8)).toByte(),
+            (0xff and (hostAddress shr 16)).toByte(),
+            (0xff and (hostAddress shr 24)).toByte()
+        )
+        return try {
+            InetAddress.getByAddress(addressBytes)
+        } catch (e: UnknownHostException) {
+            throw AssertionError()
+        }
+    }
 }

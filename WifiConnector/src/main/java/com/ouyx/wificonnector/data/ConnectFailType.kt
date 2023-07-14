@@ -39,7 +39,7 @@ sealed class ConnectFailType {
     /**
      * 指定连接的SSID 已经连接
      */
-    object SsidConnected : ConnectFailType()
+    class SSIDConnected(val wifiConnectInfo: WifiConnectInfo) : ConnectFailType()
 
     /**
      * WIFI  没有开启

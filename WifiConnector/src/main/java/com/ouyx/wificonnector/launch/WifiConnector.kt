@@ -47,14 +47,15 @@ class WifiConnector private constructor() {
     fun startConnect(
         ssid: String,
         pwd: String,
-        cipherType: WifiCipherType = WifiCipherType.WEP,
+        cipherType: WifiCipherType = WifiCipherType.WPA,
+        timeoutInMillis: Long = 5000,
         connectCallback: WifiConnectCallback.() -> Unit
     ) {
         if (!::mWifiManager.isInitialized) {
             DefaultLogger.error(message = "WifiConnector未初始化，请先调用WifiConnector.init()")
             return
         }
-        mDispatcher.startConnect(ssid, pwd, cipherType, connectCallback)
+        mDispatcher.startConnect(ssid, pwd, cipherType, timeoutInMillis, connectCallback)
     }
 
     fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
