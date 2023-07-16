@@ -63,6 +63,11 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      */
     private lateinit var mCipherType: WifiCipherType
 
+    /**
+     *  当前连接 对应系统已存在的配置
+     */
+    private var mExistingConfiguration: WifiConfiguration? = null
+
 
     companion object {
         @Volatile
@@ -84,7 +89,8 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                         DefaultLogger.info(message = "密码错误")
                     }
                 } else if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
-                    val networkState = (intent.getParcelableExtra<Parcelable>(WifiManager.EXTRA_NETWORK_INFO) as NetworkInfo?)!!.detailedState
+                    val networkState =
+                        (intent.getParcelableExtra<Parcelable>(WifiManager.EXTRA_NETWORK_INFO) as NetworkInfo?)!!.detailedState
                     handleNetState(networkState)
                 }
             }
@@ -110,7 +116,13 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      * @param cipherType
      *
      */
-    fun startConnect(ssid: String, pwd: String, cipherType: WifiCipherType,timeoutInMillis:Long, connectCallback: WifiConnectCallback) {
+    fun startConnect(
+        ssid: String,
+        pwd: String,
+        cipherType: WifiCipherType,
+        timeoutInMillis: Long,
+        connectCallback: WifiConnectCallback
+    ) {
         mTargetSSID = ssid
         mPwd = pwd
         mCipherType = cipherType
@@ -151,22 +163,29 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         }
 
 
-        mConnectJob?.invokeOnCompletion {
+        mConnectJob?.invokeOnCompletion { it ->
             isConnecting.set(false)
+            mExistingConfiguration?.let {
+                getWifiManager().removeNetwork(it.networkId)
+                getWifiManager().saveConfiguration()
+            }
             when (it) {
                 is TimeoutCancellationException -> {
                     DefaultLogger.debug(message = "超时而取消")
                     mConnectCallback?.callConnectFail(ConnectFailType.ConnectTimeout)
                 }
+
                 is CancelReason -> {
                     when (it) {
                         CancelReason.CancelByChoice -> {
                             DefaultLogger.debug(message = "用户主动取消")
                             mConnectCallback?.callConnectFail(ConnectFailType.CancelByChoice)
                         }
+
                         CancelReason.CancelByError -> {
                             DefaultLogger.debug(message = "运行异常而取消")
                         }
+
                         is CancelReason.CancelBySuccess -> {
                             DefaultLogger.debug(message = "连接成功而取消任务：" + it.wifiConnectInfo.toString())
                             mConnectCallback?.callConnectSuccess(it.wifiConnectInfo)
@@ -174,12 +193,13 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                     }
                 }
             }
+
         }
     }
 
 
     /**
-     * 主动停止连接 WIFI
+     * 连接过程中，主动取消连接任务
      */
     fun stopConnect() {
         mConnectJob?.cancel(CancelReason.CancelByChoice)
@@ -208,19 +228,18 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      */
     @SuppressLint("MissingPermission")
     private fun connectWifi() {
-        val existingConfiguration = getConfigViaSSID(mTargetSSID)
-        DefaultLogger.info(message = "[$mTargetSSID] 在系统中对应的网络配置 = $existingConfiguration")
+        mExistingConfiguration = getConfigViaSSID(mTargetSSID)
+        DefaultLogger.info(message = "[$mTargetSSID] 在系统中对应的网络配置 = $mExistingConfiguration")
 
         //禁掉所有wifi
         for (c in getWifiManager().configuredNetworks) {
             getWifiManager().disableNetwork(c.networkId)
         }
 
-        if (existingConfiguration != null) {
+        if (mExistingConfiguration != null) {
             DefaultLogger.info(message = "[$mTargetSSID]是已存在配置, 尝试连接...")
-            val enabled = getWifiManager().enableNetwork(existingConfiguration.networkId, true)
+            val enabled = getWifiManager().enableNetwork(mExistingConfiguration!!.networkId, true)
             DefaultLogger.info(message = "[$mTargetSSID] 设置网络配置 结果: $enabled")
-
         } else {
 
             val wifiConfig = createWifiCfg()
@@ -248,7 +267,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         } else if (state == DetailedState.CONNECTED) {
             DefaultLogger.info(message = "收到[${getWifiInfo().ssid}]已连接的广播")
             if (isConnecting.get()) {
-                val connectedSSID = getConnectedSsid()?.replace("\"","")
+                val connectedSSID = getConnectedSsid()?.replace("\"", "")
                 val wifiConnectedInfo = WifiConnectInfo().apply {
                     name = connectedSSID
                     ip = getIpAddress()
@@ -322,6 +341,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 }
                 config.wepTxKeyIndex = 0
             }
+
             WifiCipherType.WPA -> {
                 config.preSharedKey = "\"" + mPwd + "\""
                 with(config) {
@@ -336,6 +356,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 }
                 config.status = WifiConfiguration.Status.ENABLED
             }
+
             WifiCipherType.NO_PASS -> {
                 config.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE)
             }
@@ -402,7 +423,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      * WIFI 是否开启
      */
     private fun isWifiEnable() = getWifiManager().isWifiEnabled
-
 
 
 }

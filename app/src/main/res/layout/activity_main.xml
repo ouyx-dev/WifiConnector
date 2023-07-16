@@ -36,19 +36,8 @@
             android:text="连接"
             tools:ignore="HardcodedText" />
 
-    <Button
-            android:id="@+id/btn_disconnect"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="断开"
-            tools:ignore="HardcodedText" />
 
-    <Button
-            android:id="@+id/btn_cancel_by_choice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="主动取消"
-            tools:ignore="HardcodedText" />
+
 
     <TextView
             android:id="@+id/txt_log"

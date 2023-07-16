@@ -27,11 +27,11 @@ class MainActivity : BaseActivity() {
         WifiConnector.getInstance().init(application)
 
         viewBinding.btnConnect.setOnClickListener {
-            requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE), agree = {
+            requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE,Manifest.permission.ACCESS_FINE_LOCATION), agree = {
                 WifiConnector.getInstance().startConnect(viewBinding.editSsid.text.toString(), viewBinding.editPassword.text.toString()) {
                     onConnectStart {
                         DefaultLogger.info(message = "onConnectStart>>>")
-                        findViewById<TextView>(R.id.txt_log).text = "onConnectStart"
+                        findViewById<TextView>(R.id.txt_log).text = "连接中..."
                     }
                     onConnectSuccess {
                         DefaultLogger.info(message = "onConnectSuccess\n $it")
@@ -47,7 +47,7 @@ class MainActivity : BaseActivity() {
                             ConnectFailType.WifiNotEnable -> "WIFI未开启"
                         }
                         DefaultLogger.info(message = "onConnectFail: $cause")
-                        findViewById<TextView>(R.id.txt_log).text = "onConnectFail $cause"
+                        findViewById<TextView>(R.id.txt_log).text = "onConnectFail: $cause"
                     }
                 }
             })
@@ -55,9 +55,7 @@ class MainActivity : BaseActivity() {
         }
 
 
-        viewBinding.btnCancelByChoice.setOnClickListener {
-            WifiConnectRequest.getInstance().stopConnect()
-        }
+
 
         viewBinding.btnScan.setOnClickListener {
             requestPermission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), agree = {
