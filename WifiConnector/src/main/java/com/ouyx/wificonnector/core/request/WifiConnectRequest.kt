@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  *  WIFI 连接请求
+ *  用于 targetSdk 28 及以下的
  *
  * @author ouyx
  * @date 2023年07月06日 14时15分
@@ -86,7 +87,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 if (action == WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION) {
                     val linkWifiResult = intent.getIntExtra(WifiManager.EXTRA_SUPPLICANT_ERROR, 123)
                     if (linkWifiResult == WifiManager.ERROR_AUTHENTICATING) {
-                        DefaultLogger.info(message = "密码错误")
+                        DefaultLogger.debug(message = "密码错误")
                     }
                 } else if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
                     val networkState =
@@ -229,7 +230,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     @SuppressLint("MissingPermission")
     private fun connectWifi() {
         mExistingConfiguration = getConfigViaSSID(mTargetSSID)
-        DefaultLogger.info(message = "[$mTargetSSID] 在系统中对应的网络配置 = $mExistingConfiguration")
+        DefaultLogger.debug(message = "[$mTargetSSID] 在系统中对应的网络配置 = $mExistingConfiguration")
 
         //禁掉所有wifi
         for (c in getWifiManager().configuredNetworks) {
@@ -237,35 +238,35 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         }
 
         if (mExistingConfiguration != null) {
-            DefaultLogger.info(message = "[$mTargetSSID]是已存在配置, 尝试连接...")
+            DefaultLogger.debug(message = "[$mTargetSSID]是已存在配置, 尝试连接...")
             val enabled = getWifiManager().enableNetwork(mExistingConfiguration!!.networkId, true)
-            DefaultLogger.info(message = "[$mTargetSSID] 设置网络配置 结果: $enabled")
+            DefaultLogger.debug(message = "[$mTargetSSID] 设置网络配置 结果: $enabled")
         } else {
 
             val wifiConfig = createWifiCfg()
-            DefaultLogger.info(message = "根据[$mTargetSSID]创建新配置，尝试连接...")
+            DefaultLogger.debug(message = "根据[$mTargetSSID]创建新配置，尝试连接...")
             val netID = getWifiManager().addNetwork(wifiConfig)
             val enabled = getWifiManager().enableNetwork(netID, true)
-            DefaultLogger.info(message = "设置网络配置enable 结果 =$enabled")
+            DefaultLogger.debug(message = "设置网络配置enable 结果 =$enabled")
         }
     }
 
 
     private fun handleNetState(state: DetailedState) {
         if (state == DetailedState.AUTHENTICATING) {
-            DefaultLogger.info(message = "认证中...")
+            DefaultLogger.debug(message = "认证中...")
         } else if (state == DetailedState.CONNECTING) {
-            DefaultLogger.info(message = "连接中...")
+            DefaultLogger.debug(message = "连接中...")
         } else if (state == DetailedState.DISCONNECTED) {
-            DefaultLogger.info(message = "已断开连接...")
+            DefaultLogger.debug(message = "已断开连接...")
         } else if (state == DetailedState.DISCONNECTING) {
-            DefaultLogger.info(message = "断开连接中...")
+            DefaultLogger.debug(message = "断开连接中...")
         } else if (state == DetailedState.FAILED) {
-            DefaultLogger.info(message = "连接失败...")
+            DefaultLogger.debug(message = "连接失败...")
         } else if (state == DetailedState.SCANNING) {
-            DefaultLogger.info(message = "搜索中...")
+            DefaultLogger.debug(message = "搜索中...")
         } else if (state == DetailedState.CONNECTED) {
-            DefaultLogger.info(message = "收到[${getWifiInfo().ssid}]已连接的广播")
+            DefaultLogger.debug(message = "收到[${getWifiInfo().ssid}]已连接的广播")
             if (isConnecting.get()) {
                 val connectedSSID = getConnectedSsid()?.replace("\"", "")
                 val wifiConnectedInfo = WifiConnectInfo().apply {
@@ -274,7 +275,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                     mac = getMacAddress()
                     gateWay = getGateway()
                 }
-                DefaultLogger.info(message = "mTargetSSID =$mTargetSSID  connectedSSID =$connectedSSID")
+                DefaultLogger.debug(message = "mTargetSSID =$mTargetSSID  connectedSSID =$connectedSSID")
 
                 if (mTargetSSID == connectedSSID) {
                     mConnectJob?.cancel(CancelReason.CancelBySuccess(wifiConnectedInfo))
