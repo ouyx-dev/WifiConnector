@@ -7,7 +7,6 @@ package com.ouyx.wificonnector
 
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.PersistableBundle
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -25,7 +24,7 @@ open class BaseActivity : AppCompatActivity() {
 
     private var permissionAgree: (() -> Unit)? = null
 
-    private var permissionRefuse: ((refusePermissions: ArrayList<String>) -> Unit)? = null
+    private var permissionDisAgree: ((refusePermissions: ArrayList<String>) -> Unit)? = null
 
     override fun onCreate(savedInstanceState: Bundle?){
         super.onCreate(savedInstanceState)
@@ -41,7 +40,7 @@ open class BaseActivity : AppCompatActivity() {
             }
 
             if (refusePermission.size > 0) {
-                permissionRefuse?.invoke(refusePermission)
+                permissionDisAgree?.invoke(refusePermission)
             } else {
                 permissionAgree?.invoke()
             }
@@ -51,10 +50,10 @@ open class BaseActivity : AppCompatActivity() {
     fun requestPermission(
         permissions: Array<String>,
         agree: (() -> Unit)? = null,
-        refuse: ((refusePermissions: ArrayList<String>) -> Unit)? = null
+        disAgress: ((refusePermissions: ArrayList<String>) -> Unit)? = null
     ) {
         this.permissionAgree = agree
-        this.permissionRefuse = refuse
+        this.permissionDisAgree = disAgress
 
         val notGrantedPermissions = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) !=

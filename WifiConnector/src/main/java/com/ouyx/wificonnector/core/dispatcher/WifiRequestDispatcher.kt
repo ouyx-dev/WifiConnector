@@ -5,9 +5,11 @@
  */
 package com.ouyx.wificonnector.core.dispatcher
 
+import android.os.Build
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.core.request.WifiConnectRequest
+import com.ouyx.wificonnector.core.request.WifiConnectRequestQ
 import com.ouyx.wificonnector.core.request.WifiScanRequest
 import com.ouyx.wificonnector.data.WifiCipherType
 import kotlinx.coroutines.*
@@ -32,6 +34,11 @@ class WifiRequestDispatcher : IRequestDispatcher {
 
     internal fun getDefaultScope() = defaultScope
 
+    /**
+     *  AndroidQ之后，当前连接请求
+     */
+    private var mConnectRequestQ: WifiConnectRequestQ? = null
+
 
     companion object {
         @Volatile
@@ -42,17 +49,28 @@ class WifiRequestDispatcher : IRequestDispatcher {
             }
     }
 
+    /**
+     * 开始连接WIFI
+     *
+     * Android Q 之前使用 WifiManager.enableNetwork 来连接 ，支持超时
+     * Android Q 及之后 使用 requestNetwork 连接，因为系统会提供弹框辅助连接所以不支持超时
+     */
     override fun startConnect(
         ssid: String,
-        pwd: String,
+        pwd: String?,
         cipherType: WifiCipherType,
         timeoutInMillis: Long,
-        connectCallback: WifiConnectCallback.() -> Unit
+        connectCallback: WifiConnectCallback.() -> Unit,
     ) {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
-
-        WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            mConnectRequestQ?.release()
+            mConnectRequestQ = WifiConnectRequestQ()
+            mConnectRequestQ!!.startConnect(ssid, pwd, cipherType, wifiConnectCallback)
+        } else {
+            WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+        }
     }
 
     override fun startScan(scanCallback: WifiScanCallback.() -> Unit) {

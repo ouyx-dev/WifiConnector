@@ -46,8 +46,8 @@ class WifiConnector private constructor() {
 
     fun startConnect(
         ssid: String,
-        pwd: String,
-        cipherType: WifiCipherType = WifiCipherType.WPA,
+        pwd: String?,
+        cipherType: WifiCipherType = WifiCipherType.WPA2,
         timeoutInMillis: Long = 5000,
         connectCallback: WifiConnectCallback.() -> Unit
     ) {

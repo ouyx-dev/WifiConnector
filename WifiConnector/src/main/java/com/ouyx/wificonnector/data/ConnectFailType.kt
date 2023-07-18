@@ -44,8 +44,19 @@ sealed class ConnectFailType {
     /**
      * WIFI  没有开启
      */
-    object WifiNotEnable :ConnectFailType()
+    object WifiNotEnable : ConnectFailType()
 
+
+    /**
+     *  无效参数： 加密模式 密码不能为空
+     */
+    object EncryptionPasswordNotNull : ConnectFailType()
+
+
+    /**
+     * 连接失败
+     */
+    object ConnectUnavailable :ConnectFailType()
 
 
 }

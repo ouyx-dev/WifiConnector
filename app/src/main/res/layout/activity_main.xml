@@ -29,15 +29,45 @@
             android:hint="请输入Wifi密码（无密码请忽略）"
             tools:ignore="HardcodedText" />
 
+
+    <RadioGroup
+            android:id="@+id/radios_cipher"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+        <RadioButton
+                android:id="@+id/radio_wep"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WEP" />
+
+        <RadioButton
+                android:id="@+id/radio_wpa2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="WPA2" />
+
+        <RadioButton
+                android:id="@+id/radio_wpa3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WPA3" />
+
+        <RadioButton
+                android:id="@+id/radio_no_pass"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="NO PASS" />
+    </RadioGroup>
+
     <Button
             android:id="@+id/btn_connect"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="连接"
             tools:ignore="HardcodedText" />
-
-
-
 
     <TextView
             android:id="@+id/txt_log"
@@ -56,6 +86,6 @@
             android:id="@+id/btn_test"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="测试"/>
+            android:text="测试" />
 
 </LinearLayout>

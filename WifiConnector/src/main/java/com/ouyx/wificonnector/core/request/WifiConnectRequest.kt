@@ -56,7 +56,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     /**
      * 当前正在连接WIFI 的密码
      */
-    private lateinit var mPwd: String
+    private var mPwd: String? = null
 
 
     /**
@@ -119,7 +119,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      */
     fun startConnect(
         ssid: String,
-        pwd: String,
+        pwd: String?,
         cipherType: WifiCipherType,
         timeoutInMillis: Long,
         connectCallback: WifiConnectCallback
@@ -138,20 +138,23 @@ class WifiConnectRequest private constructor() : BaseRequest() {
             mConnectCallback?.callConnectFail(ConnectFailType.ConnectingInProgress)
             return
         }
-        if (getWifiInfo().ipAddress != 0 && getWifiInfo().ssid.replace("\"", "") == ssid) {
-            val wifiConnectedInfo = WifiConnectInfo().apply {
-                name = ssid
-                ip = getIpAddress()
-                mac = getMacAddress()
-                gateWay = getGateway()
-            }
-            mConnectCallback?.callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
-            return
-        }
+
         if (!isWifiEnable()) {
             mConnectCallback?.callConnectFail(ConnectFailType.WifiNotEnable)
             return
         }
+
+        if (WifiUtil.getWifiInfo(getWifiManager()).ipAddress != 0 && WifiUtil.getWifiInfo(getWifiManager()).ssid.replace("\"", "") == ssid) {
+            val wifiConnectedInfo = WifiConnectInfo().apply {
+                name = ssid
+                ip = WifiUtil.getIpAddress(getWifiManager())
+                mac = WifiUtil.getMacAddress(getWifiManager())
+                gateWay = WifiUtil.getGateway(getWifiManager())
+            }
+            mConnectCallback?.callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
+            return
+        }
+
 
         mConnectJob = ioScope.launch {
             withTimeout(mTimeoutInMillis) {
@@ -162,7 +165,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 delay(mTimeoutInMillis)
             }
         }
-
 
         mConnectJob?.invokeOnCompletion { it ->
             isConnecting.set(false)
@@ -218,6 +220,8 @@ class WifiConnectRequest private constructor() : BaseRequest() {
      *  回收所有资源
      */
     override fun release() {
+        removeCallback()
+
         getApplication().unregisterReceiver(mWifiConnectBroadcastReceiver)
         mConnectJob?.cancel()
         mConnectCallback = null
@@ -230,7 +234,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     @SuppressLint("MissingPermission")
     private fun connectWifi() {
         mExistingConfiguration = getConfigViaSSID(mTargetSSID)
-        DefaultLogger.debug(message = "[$mTargetSSID] 在系统中对应的网络配置 = $mExistingConfiguration")
+        DefaultLogger.debug(message = "[$mTargetSSID] 在系统中对应的网络配置 :$mExistingConfiguration")
 
         //禁掉所有wifi
         for (c in getWifiManager().configuredNetworks) {
@@ -240,14 +244,14 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         if (mExistingConfiguration != null) {
             DefaultLogger.debug(message = "[$mTargetSSID]是已存在配置, 尝试连接...")
             val enabled = getWifiManager().enableNetwork(mExistingConfiguration!!.networkId, true)
-            DefaultLogger.debug(message = "[$mTargetSSID] 设置网络配置 结果: $enabled")
+            DefaultLogger.debug(message = "[$mTargetSSID]enableNetwork返回值: $enabled")
         } else {
 
             val wifiConfig = createWifiCfg()
             DefaultLogger.debug(message = "根据[$mTargetSSID]创建新配置，尝试连接...")
             val netID = getWifiManager().addNetwork(wifiConfig)
             val enabled = getWifiManager().enableNetwork(netID, true)
-            DefaultLogger.debug(message = "设置网络配置enable 结果 =$enabled")
+            DefaultLogger.debug(message = "enableNetwork返回值 =$enabled")
         }
     }
 
@@ -266,16 +270,15 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         } else if (state == DetailedState.SCANNING) {
             DefaultLogger.debug(message = "搜索中...")
         } else if (state == DetailedState.CONNECTED) {
-            DefaultLogger.debug(message = "收到[${getWifiInfo().ssid}]已连接的广播")
+            DefaultLogger.debug(message = "收到[${WifiUtil.getWifiInfo(getWifiManager()).ssid}]已连接的广播")
             if (isConnecting.get()) {
-                val connectedSSID = getConnectedSsid()?.replace("\"", "")
+                val connectedSSID = WifiUtil.getConnectedSsid(getWifiManager())?.replace("\"", "")
                 val wifiConnectedInfo = WifiConnectInfo().apply {
                     name = connectedSSID
-                    ip = getIpAddress()
-                    mac = getMacAddress()
-                    gateWay = getGateway()
+                    ip = WifiUtil.getIpAddress(getWifiManager())
+                    mac = WifiUtil.getMacAddress(getWifiManager())
+                    gateWay = WifiUtil.getGateway(getWifiManager())
                 }
-                DefaultLogger.debug(message = "mTargetSSID =$mTargetSSID  connectedSSID =$connectedSSID")
 
                 if (mTargetSSID == connectedSSID) {
                     mConnectJob?.cancel(CancelReason.CancelBySuccess(wifiConnectedInfo))
@@ -303,17 +306,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
 
 
     /**
-     * 获取当前已连接 wifi 的信息
-     *
-     * 比如
-     * SSID: "ouyx", Security type: 2, Supplicant state: COMPLETED, Wi-Fi standard: 4, RSSI: -22, Link speed: 192Mbps,
-     * Tx Link speed: 192Mbps, Max Supported Tx Link speed: 144Mbps, Rx Link speed: 192Mbps, Max Supported Rx Link speed: 144Mbps,
-     * Frequency: 2437MHz, Net ID: 8, Metered hint: true, score: 60, CarrierMerged: false, SubscriptionId: -1, IsPrimary: -1
-     */
-    private fun getWifiInfo(): WifiInfo = getWifiManager().connectionInfo
-
-
-    /**
      * 根据当前 保存的[mCipherType] [mPwd] [mTargetSSID] 创建wifi配置文件
      *
      */
@@ -329,7 +321,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         when (mCipherType) {
             WifiCipherType.WEP -> {
                 if (!TextUtils.isEmpty(mPwd)) {
-                    if (isWepKeyHexadecimal(mPwd)) {
+                    if (isWepKeyHexadecimal(mPwd!!)) {
                         config.wepKeys[0] = mPwd
                     } else {
                         config.wepKeys[0] = "\"" + mPwd + "\""
@@ -343,7 +335,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 config.wepTxKeyIndex = 0
             }
 
-            WifiCipherType.WPA -> {
+            WifiCipherType.WPA2, WifiCipherType.WPA3 -> {
                 config.preSharedKey = "\"" + mPwd + "\""
                 with(config) {
                     allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN)
@@ -364,46 +356,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         }
         return config
     }
-
-
-    /**
-     * 获取已连接WifiS设备的 SSID
-     *
-     * @return SSID
-     */
-    @SuppressLint("MissingPermission")
-    private fun getConnectedSsid(): String? {
-        val wifiInfo = getWifiManager().connectionInfo
-        var connectedWifiSSID = wifiInfo.ssid
-        val networkId = wifiInfo.networkId
-        val configuredNetworks = getWifiManager().configuredNetworks
-        for (wifiConfiguration in configuredNetworks) {
-            if (wifiConfiguration.networkId == networkId) {
-                connectedWifiSSID = wifiConfiguration.SSID
-                break
-            }
-        }
-        return connectedWifiSSID
-    }
-
-    /**
-     * 获取ip地址
-     */
-    private fun getIpAddress(): String? =
-        WifiUtil.intToInetAddress(getWifiManager().connectionInfo.ipAddress)?.hostAddress
-
-
-    /**
-     * 获取 mac 地址
-     */
-    private fun getMacAddress() = getWifiManager().connectionInfo.macAddress
-
-    /**
-     * 获取网关地址
-     */
-    private fun getGateway(): String? =
-        WifiUtil.intToInetAddress(getWifiManager().dhcpInfo.gateway)?.hostAddress
-
 
     /**
      * 用于判断WEP密钥是否为十六进制

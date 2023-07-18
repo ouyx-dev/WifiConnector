@@ -22,7 +22,7 @@ interface IRequestDispatcher {
      */
     fun startConnect(
         ssid: String,
-        pwd: String,
+        pwd: String?,
         cipherType: WifiCipherType = WifiCipherType.WEP,
         timeoutInMillis: Long,
         connectCallback: WifiConnectCallback.() -> Unit

@@ -10,10 +10,8 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiNetworkSpecifier
-import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
 import android.os.Bundle
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import com.ouyx.wificonnector.data.ConnectFailType
 import com.ouyx.wificonnector.data.WifiCipherType
@@ -24,6 +22,7 @@ import com.ouyx.wificonnector.util.WifiUtil
 
 class MainActivity : BaseActivity() {
     lateinit var viewBinding: ActivityMainBinding
+    private var mChipType = WifiCipherType.WPA2
 
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -35,32 +34,32 @@ class MainActivity : BaseActivity() {
 
         WifiConnector.getInstance().init(application)
 
+        viewBinding.radiosCipher.setOnCheckedChangeListener { group, checkedId -> // 处理选中状态变化的逻辑
+            when (checkedId) {
+                viewBinding.radioWep.id -> {
+                    mChipType = WifiCipherType.WEP
+                }
+                viewBinding.radioWpa2.id -> {
+                    mChipType = WifiCipherType.WPA2
+                }
+                viewBinding.radioWpa3.id -> {
+                    mChipType = WifiCipherType.WPA3
+                }
+                viewBinding.radioNoPass.id -> {
+                    mChipType = WifiCipherType.NO_PASS
+                }
+            }
+        }
         viewBinding.btnConnect.setOnClickListener {
-            requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION), agree = {
-                WifiConnector.getInstance()
-                    .startConnect(viewBinding.editSsid.text.toString(), viewBinding.editPassword.text.toString(), WifiCipherType.NO_PASS) {
-                        onConnectStart {
-                            DefaultLogger.debug(message = "onConnectStart>>>")
-                            findViewById<TextView>(R.id.txt_log).text = "连接中..."
-                        }
-                        onConnectSuccess {
-                            DefaultLogger.debug(message = "onConnectSuccess\n $it")
-                            findViewById<TextView>(R.id.txt_log).text = "onConnectSuccess\n$it"
-                        }
-                        onConnectFail {
-                            val cause = when (it) {
-                                ConnectFailType.CancelByChoice -> "用户主动取消"
-                                ConnectFailType.ConnectTimeout -> "超时"
-                                ConnectFailType.ConnectingInProgress -> "正在连接中..."
-                                ConnectFailType.PermissionNotEnough -> "权限不够"
-                                is ConnectFailType.SSIDConnected -> "目标SSID 已连接[${it.wifiConnectInfo}]"
-                                ConnectFailType.WifiNotEnable -> "WIFI未开启"
-                            }
-                            DefaultLogger.debug(message = "onConnectFail: $cause")
-                            findViewById<TextView>(R.id.txt_log).text = "onConnectFail: $cause"
-                        }
-                    }
-            })
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                connect()
+            } else {
+                requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION), agree = {
+                    connect()
+                }, disAgress = {
+                    DefaultLogger.info(message = "权限拒绝")
+                })
+            }
 
         }
 
@@ -70,7 +69,7 @@ class MainActivity : BaseActivity() {
                 DefaultLogger.debug(message = " ACCESS_FINE_LOCATION 权限已获取")
                 startScan()
 
-            }, refuse = {
+            }, disAgress = {
                 DefaultLogger.error(message = "没有权限!")
             })
         }
@@ -81,11 +80,40 @@ class MainActivity : BaseActivity() {
                     Manifest.permission.CHANGE_NETWORK_STATE,
                 ), agree = {
                     connect2("ouyx", "123456789")
-                }, refuse = {
+                }, disAgress = {
                     DefaultLogger.info(message = "权限被拒绝 $it")
                 })
 
         }
+    }
+
+    private fun connect() {
+        WifiConnector.getInstance()
+            .startConnect(viewBinding.editSsid.text.toString(), viewBinding.editPassword.text.toString(), mChipType) {
+                onConnectStart {
+                    DefaultLogger.debug(message = "onConnectStart>>>")
+                    viewBinding.txtLog.text = "连接中..."
+                }
+                onConnectSuccess {
+                    DefaultLogger.debug(message = "onConnectSuccess\n $it")
+                    viewBinding.txtLog.text = "onConnectSuccess\n$it"
+                }
+                onConnectFail {
+                    val cause = when (it) {
+                        ConnectFailType.CancelByChoice -> "用户主动取消"
+                        ConnectFailType.ConnectTimeout -> "超时"
+                        ConnectFailType.ConnectingInProgress -> "正在连接中..."
+                        ConnectFailType.PermissionNotEnough -> "权限不够"
+                        is ConnectFailType.SSIDConnected -> "目标SSID 已连接[${it.wifiConnectInfo}]"
+                        ConnectFailType.WifiNotEnable -> "WIFI未开启"
+                        ConnectFailType.ConnectUnavailable -> "连接失败"
+                        ConnectFailType.EncryptionPasswordNotNull -> "加密时密码不能为空"
+                    }
+                    DefaultLogger.debug(message = "onConnectFail: $cause")
+                    viewBinding.txtLog.text = "onConnectFail: $cause"
+
+                }
+            }
     }
 
     private fun startScan() {
@@ -114,7 +142,7 @@ class MainActivity : BaseActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val wifiNetworkSpecifier = WifiNetworkSpecifier.Builder()
                 .setSsid(ssid)
-                .setWpa2Passphrase(pwd)
+                .setWpa3Passphrase(pwd)
                 .build()
             val request = NetworkRequest.Builder()
                 .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
@@ -135,7 +163,7 @@ class MainActivity : BaseActivity() {
 
                 override fun onUnavailable() {
                     super.onUnavailable()
-                    DefaultLogger.debug(message = "onUnavailable !")
+                    DefaultLogger.debug(message = "onUnavailable!")
                 }
             }
             // 连接wifi
