@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector.util
 
@@ -14,8 +14,8 @@ import android.location.LocationManager
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
-import com.ouyx.wificonnector.core.request.WifiConnectRequest
-import com.ouyx.wificonnector.core.request.WifiConnectRequestQ
+import com.ouyx.wificonnector.data.WiFiStrength
+import com.ouyx.wificonnector.data.WifiCipherType
 import java.net.InetAddress
 import java.net.UnknownHostException
 
@@ -62,10 +62,15 @@ object WifiUtil {
 
     /**
      * 判断是否有权限 调用WIFI
+     *
+     * Android Q 及以上  有CHANGE_NETWORK_STATE 普通权限就可以连接，  有ACCESS_FINE_LOCATION权限能获取连接后WIFI 的ssid信息
+     *
+     *
      */
     fun isPermissionConnect(application: Application?): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            isPermission(application, Manifest.permission.CHANGE_NETWORK_STATE)
+            isPermission(application, Manifest.permission.CHANGE_NETWORK_STATE) &&
+                    isPermission(application, Manifest.permission.ACCESS_FINE_LOCATION)
         } else {
             isPermission(application, Manifest.permission.ACCESS_FINE_LOCATION)
                     && isPermission(application, Manifest.permission.ACCESS_WIFI_STATE)
@@ -136,7 +141,7 @@ object WifiUtil {
      * 获取ip地址
      */
     fun getIpAddress(wifiManager: WifiManager): String? =
-        WifiUtil.intToInetAddress(wifiManager.connectionInfo.ipAddress)?.hostAddress
+        intToInetAddress(wifiManager.connectionInfo.ipAddress)?.hostAddress
 
 
     /**
@@ -149,7 +154,7 @@ object WifiUtil {
      * 获取网关地址
      */
     fun getGateway(wifiManager: WifiManager): String? =
-        WifiUtil.intToInetAddress(wifiManager.dhcpInfo.gateway)?.hostAddress
+        intToInetAddress(wifiManager.dhcpInfo.gateway)?.hostAddress
 
 
     /**
@@ -171,4 +176,46 @@ object WifiUtil {
         }
         return connectedWifiSSID
     }
+
+
+    /**
+     *  根据  ScanResult.capabilities 判断 WifI 信号强弱
+     *
+     */
+    fun analyzeSignalStrength(signalStrength: Int): WiFiStrength {
+        return when {
+            signalStrength >= -35 -> WiFiStrength.STRONG
+            signalStrength >= -40 -> WiFiStrength.MODERATE
+            signalStrength >= -70 -> WiFiStrength.NORMAL
+            else -> WiFiStrength.WEAK
+        }
+    }
+
+
+    /**
+     *  获取加密方式
+     *
+     */
+    fun analyzeWifiCipherType(capabilities: String?): WifiCipherType {
+        if (capabilities == null || capabilities.isEmpty()) {
+            return WifiCipherType.NO_PASS
+        }
+        return if (capabilities.contains("WPA3")) {
+            WifiCipherType.WPA3
+        } else if (capabilities.contains("WPA2")) {
+            WifiCipherType.WPA2
+        } else if (capabilities.contains("WEP")) {
+            WifiCipherType.WEP
+        } else {
+            WifiCipherType.NO_PASS
+        }
+    }
+
+    /**
+     * 判断一个字符串是否可以进行ASCII编码
+     */
+    fun isAsciiEncodable(str: String): Boolean {
+        return str.toCharArray().all { it.toInt() in 0..127 }
+    }
+
 }

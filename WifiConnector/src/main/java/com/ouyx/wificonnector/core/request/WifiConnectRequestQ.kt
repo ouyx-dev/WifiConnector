@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector.core.request
 
@@ -20,7 +20,6 @@ import com.ouyx.wificonnector.data.WifiCipherType.*
 import com.ouyx.wificonnector.data.WifiConnectInfo
 import com.ouyx.wificonnector.util.DefaultLogger
 import com.ouyx.wificonnector.util.WifiUtil
-import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @author ouyx
  * @date 2023年07月18日 13时59分
  */
-class WifiConnectRequestQ  : BaseRequest() {
+class WifiConnectRequestQ : BaseRequest() {
 
     private var mConnectCallback: WifiConnectCallback? = null
 
@@ -78,15 +77,6 @@ class WifiConnectRequestQ  : BaseRequest() {
     }
 
 
-    companion object {
-        @Volatile
-        private var INSTANCE: WifiConnectRequestQ? = null
-        fun getInstance(): WifiConnectRequestQ =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: WifiConnectRequestQ().also { INSTANCE = it }
-            }
-    }
-
     /**
      *  开始连接WIFI
      *
@@ -100,7 +90,7 @@ class WifiConnectRequestQ  : BaseRequest() {
         ssid: String,
         pwd: String?,
         cipherType: WifiCipherType,
-        connectCallback: WifiConnectCallback
+        connectCallback: WifiConnectCallback,
     ) {
         mConnectCallback = connectCallback
 
@@ -114,12 +104,22 @@ class WifiConnectRequestQ  : BaseRequest() {
         }
 
         if (!isWifiEnable()) {
+            mConnectCallback?.callConnectFail(ConnectFailType.WifiNotEnable)
+            return
+        }
+
+        if(ssid.trim().isEmpty()){
+            mConnectCallback?.callConnectFail(ConnectFailType.SsidInvalid)
+            return
+        }
+
+        if (cipherType != NO_PASS && pwd.isNullOrEmpty()) {
             mConnectCallback?.callConnectFail(ConnectFailType.EncryptionPasswordNotNull)
             return
         }
 
-        if (cipherType == NO_PASS && pwd == null) {
-            mConnectCallback?.callConnectFail(ConnectFailType.EncryptionPasswordNotNull)
+        if (pwd != null && !WifiUtil.isAsciiEncodable(pwd)) {
+            mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
             return
         }
 
@@ -134,7 +134,6 @@ class WifiConnectRequestQ  : BaseRequest() {
             mConnectCallback?.callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
             return
         }
-
 
         connect()
 
@@ -177,7 +176,7 @@ class WifiConnectRequestQ  : BaseRequest() {
         removeCallback()
 
         mConnectivityManager?.unregisterNetworkCallback(mNetworkCallback)
-        INSTANCE = null
+
     }
 
     /**

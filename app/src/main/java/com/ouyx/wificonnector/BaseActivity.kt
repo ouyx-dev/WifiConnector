@@ -1,33 +1,39 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector
 
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.view.LayoutInflater
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.viewbinding.ViewBinding
 
 
 /**
- *
+ * Base Activity
  *
  * @author ouyx
  * @date 2023年07月11日 10时49分
  */
-open class BaseActivity : AppCompatActivity() {
+open class BaseActivity<VB : ViewBinding>(private val inflate: (LayoutInflater) -> VB) : AppCompatActivity() {
     private var permissionLauncher: ActivityResultLauncher<Array<String>>? = null
 
     private var permissionAgree: (() -> Unit)? = null
 
     private var permissionDisAgree: ((refusePermissions: ArrayList<String>) -> Unit)? = null
 
-    override fun onCreate(savedInstanceState: Bundle?){
+    lateinit var viewBinding: VB
+
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewBinding = inflate(layoutInflater)
+        setContentView(viewBinding.root)
 
         permissionLauncher = registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()
@@ -50,10 +56,10 @@ open class BaseActivity : AppCompatActivity() {
     fun requestPermission(
         permissions: Array<String>,
         agree: (() -> Unit)? = null,
-        disAgress: ((refusePermissions: ArrayList<String>) -> Unit)? = null
+        disAgree: ((refusePermissions: ArrayList<String>) -> Unit)? = null,
     ) {
         this.permissionAgree = agree
-        this.permissionDisAgree = disAgress
+        this.permissionDisAgree = disAgree
 
         val notGrantedPermissions = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) !=

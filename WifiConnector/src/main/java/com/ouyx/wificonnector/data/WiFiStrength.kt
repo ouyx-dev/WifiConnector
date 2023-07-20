@@ -7,11 +7,18 @@ package com.ouyx.wificonnector.data
 
 
 /**
- * WIFI 加密类型
+ * Wifi 强度类
  *
  * @author ouyx
- * @date 2023年07月12日 11时21分
+ * @date 2023年07月19日 16时30分
  */
-enum class WifiCipherType {
-    WEP, WPA2,WPA3, NO_PASS
+enum class WiFiStrength(val desc: String) {
+
+    STRONG("强"),
+
+    MODERATE("较强"),
+
+    NORMAL("一般"),
+
+    WEAK("弱")
 }

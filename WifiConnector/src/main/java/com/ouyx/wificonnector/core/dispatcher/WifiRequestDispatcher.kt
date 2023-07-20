@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector.core.dispatcher
 
@@ -55,7 +55,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
      * Android Q 之前使用 WifiManager.enableNetwork 来连接 ，支持超时
      * Android Q 及之后 使用 requestNetwork 连接，因为系统会提供弹框辅助连接所以不支持超时
      */
-    override fun startConnect(
+    override fun connect(
         ssid: String,
         pwd: String?,
         cipherType: WifiCipherType,
@@ -66,8 +66,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
         connectCallback.invoke(wifiConnectCallback)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             mConnectRequestQ?.release()
-            mConnectRequestQ = WifiConnectRequestQ()
-            mConnectRequestQ!!.startConnect(ssid, pwd, cipherType, wifiConnectCallback)
+            mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
         } else {
             WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
         }
@@ -84,11 +83,19 @@ class WifiRequestDispatcher : IRequestDispatcher {
      *  回收所有资源
      */
     fun release() {
+
         WifiScanRequest.getInstance().release()
+
+        mConnectRequestQ?.release()
+        mConnectRequestQ = null
+
+        WifiConnectRequest.getInstance().release()
 
         mainScope.cancel()
         ioScope.cancel()
         defaultScope.cancel()
+
+        // mainScope  ioScope defaultScope  是 INSTANCE 创建时创建出来的，销毁的时候也要一起
         INSTANCE = null
     }
 
@@ -97,6 +104,10 @@ class WifiRequestDispatcher : IRequestDispatcher {
      */
     fun removeAllCallBack() {
         WifiScanRequest.getInstance().removeCallback()
+
+        mConnectRequestQ?.removeCallback()
+
+        WifiConnectRequest.getInstance().removeCallback()
     }
 
 }

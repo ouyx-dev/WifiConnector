@@ -7,11 +7,11 @@ package com.ouyx.wificonnector.data
 
 
 /**
- * WIFI 加密类型
+ *  扫描后 WIFI列表
  *
  * @author ouyx
- * @date 2023年07月12日 11时21分
+ * @date 2023年07月19日 16时23分
  */
-enum class WifiCipherType {
-    WEP, WPA2,WPA3, NO_PASS
-}
+
+
+data class WifiScanResult(val ssid: String, val level: WiFiStrength, val cipherType: WifiCipherType)

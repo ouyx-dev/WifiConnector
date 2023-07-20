@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector.data
 
@@ -52,11 +52,21 @@ sealed class ConnectFailType {
      */
     object EncryptionPasswordNotNull : ConnectFailType()
 
+    /**
+     *  无效参数： 加密模式 密码不能为空
+     */
+    object SsidInvalid : ConnectFailType()
+
+    /**
+     *   密码格式不正确,可以进行ASCII编码
+     */
+    object PasswordMustASCIIEncoded : ConnectFailType()
+
 
     /**
      * 连接失败
      */
-    object ConnectUnavailable :ConnectFailType()
+    object ConnectUnavailable : ConnectFailType()
 
 
 }

@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector.core.request
 
@@ -15,6 +15,8 @@ import android.net.wifi.WifiManager
 import androidx.core.app.ActivityCompat
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.data.ScanFailType
+import com.ouyx.wificonnector.data.WifiScanResult
+import com.ouyx.wificonnector.util.DefaultLogger
 import com.ouyx.wificonnector.util.WifiUtil
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -45,7 +47,11 @@ class WifiScanRequest : BaseRequest() {
                 val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
                 if (success) {
                     scanSuccess()
+                }else{
+                    //  通过 getWifiManager().startScan()返回值 已处理，此处不用处理
+                    DefaultLogger.error(message = "scan fail!")
                 }
+
             }
         }
     }
@@ -88,7 +94,6 @@ class WifiScanRequest : BaseRequest() {
      */
     override fun removeCallback() {
         mScanCallback = null
-
     }
 
     /**
@@ -103,12 +108,21 @@ class WifiScanRequest : BaseRequest() {
 
     private fun scanSuccess() {
         isScanning.set(false)
-
         if (ActivityCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            mScanCallback?.callScanFail(ScanFailType.PermissionNotGranted)
             return
         }
-        mScanCallback?.callScanSuccess(getWifiManager().scanResults)
+        val systemWiFiScanList = getWifiManager().scanResults
+        val parsedScanResult: List<WifiScanResult> =
+            systemWiFiScanList.filter { !it.SSID.isNullOrEmpty()}.distinctBy { it.SSID }.sortedByDescending { it.level }.map {
+                WifiScanResult(
+                    ssid = it.SSID,
+                    level = WifiUtil.analyzeSignalStrength(it.level),
+                    cipherType = WifiUtil.analyzeWifiCipherType(it.capabilities)
+                )
+            }
 
+        mScanCallback?.callScanSuccess(getWifiManager().scanResults,parsedScanResult)
     }
 
 }

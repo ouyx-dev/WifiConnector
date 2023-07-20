@@ -1,14 +1,14 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 package com.ouyx.wificonnector.callback
 
 import android.net.wifi.ScanResult
 import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
 import com.ouyx.wificonnector.data.ScanFailType
-import com.ouyx.wificonnector.core.request.WifiConnectRequest
+import com.ouyx.wificonnector.data.WifiScanResult
 import kotlinx.coroutines.launch
 
 
@@ -26,7 +26,7 @@ class WifiScanCallback {
     private var scanStart: (() -> Unit)? = null
 
 
-    private var scanSuccess: ((scanResults: MutableList<ScanResult>) -> Unit)? = null
+    private var scanSuccess: ((scanResults: MutableList<ScanResult>,parsedScanResult: List<WifiScanResult>) -> Unit)? = null
 
 
     private var scanFail: ((scanFailType: ScanFailType) -> Unit)? = null
@@ -42,7 +42,7 @@ class WifiScanCallback {
     /**
      * 扫描成功
      */
-    fun onScanSuccess(onSuccess: ((scanResults: MutableList<ScanResult>) -> Unit)) {
+    fun onScanSuccess(onSuccess: ((scanResults: MutableList<ScanResult>,parsedScanResult: List<WifiScanResult>) -> Unit)) {
         scanSuccess = onSuccess
     }
 
@@ -59,8 +59,8 @@ class WifiScanCallback {
     }
 
 
-    internal fun callScanSuccess(scanResults: MutableList<ScanResult>) {
-        mainScope.launch { scanSuccess?.invoke(scanResults) }
+    internal fun callScanSuccess(systemScanResult: MutableList<ScanResult>, parsedScanResult: List<WifiScanResult>) {
+        mainScope.launch { scanSuccess?.invoke(systemScanResult,parsedScanResult) }
     }
 
 

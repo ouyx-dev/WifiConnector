@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2022-2032 上海微创卜算子医疗科技有限公司
+ * Copyright (c) 2022-2032 ouyx
  * 不能修改和删除上面的版权声明
- * 此代码属于上海微创卜算子医疗科技有限公司编写，在未经允许的情况下不得传播复制
+ * 此代码属于ouyx编写，在未经允许的情况下不得传播复制
  */
 @file:Suppress("DEPRECATION")
 
@@ -122,7 +122,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         pwd: String?,
         cipherType: WifiCipherType,
         timeoutInMillis: Long,
-        connectCallback: WifiConnectCallback
+        connectCallback: WifiConnectCallback,
     ) {
         mTargetSSID = ssid
         mPwd = pwd
@@ -136,6 +136,16 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         }
         if (isConnecting.get()) {
             mConnectCallback?.callConnectFail(ConnectFailType.ConnectingInProgress)
+            return
+        }
+
+        if (pwd != null && !WifiUtil.isAsciiEncodable(pwd)) {
+            mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
+            return
+        }
+
+        if(ssid.trim().isEmpty()){
+            mConnectCallback?.callConnectFail(ConnectFailType.SsidInvalid)
             return
         }
 
