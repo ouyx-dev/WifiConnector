@@ -115,7 +115,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         mListAdapter.data.clear()
         mListAdapter.notifyDataSetChanged()
 
-        WifiConnector.get().startScan {
+        WifiConnector.get().scan {
             onScanStart {
                 mListAdapter.setHeaderView(getScanningView())
 

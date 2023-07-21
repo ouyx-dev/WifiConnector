@@ -14,7 +14,6 @@ import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
 import com.ouyx.wificonnector.data.WifiCipherType
 import com.ouyx.wificonnector.util.DefaultLogger
 
-
 /**
  * Wifi连接 入口
  *
@@ -75,15 +74,13 @@ class WifiConnector private constructor() {
      * scanFail{scanFailType->} Lambda表达式
      *
      */
-    fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
+    fun scan(scanCallback: WifiScanCallback.() -> Unit) {
         if (!::mWifiManager.isInitialized) {
             DefaultLogger.error(message = "WifiConnector未初始化，请先调用WifiConnector.init()")
             return
         }
         mDispatcher.startScan(scanCallback)
     }
-
-
 
     /**
      * 移除所有回调
