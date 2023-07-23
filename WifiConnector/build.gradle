@@ -11,7 +11,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'com.github.fizzuas'
             artifactId = 'WifiConnector'
-            version = '1.0.3'
+            version = '1.0.0'
 
             afterEvaluate {
                 from components.release
