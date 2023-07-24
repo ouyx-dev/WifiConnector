@@ -71,7 +71,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         viewBinding.btnScan.setOnClickListener {
             requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION), agree = {
                 startScan()
-
             }, disAgree = {
                 DefaultLogger.error(message = "没有权限!")
             })
