@@ -11,8 +11,9 @@ import android.net.wifi.WifiManager
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
+import com.ouyx.wificonnector.data.ConnectFailType
 import com.ouyx.wificonnector.data.WifiCipherType
-import com.ouyx.wificonnector.util.DefaultLogger
+import com.ouyx.wificonnector.exceptions.InitializationException
 
 /**
  * Wifi连接 入口
@@ -25,7 +26,7 @@ class WifiConnector private constructor() {
 
     lateinit var mWifiManager: WifiManager
 
-    lateinit var mDispatcher: WifiRequestDispatcher
+    private lateinit var mDispatcher: WifiRequestDispatcher
 
     companion object {
         @Volatile
@@ -50,7 +51,7 @@ class WifiConnector private constructor() {
      * @param pwd
      * @param cipherType 支持 WAP2 WAP3  WEP NO_PASS, 默认WPA2
      * @param timeoutInMillis Android Q 及 以后 不支持超时，因为有有系统弹框活系统页面辅助连接； Android Q 之前 支持超时，默认5s
-     * @param 支持 start{} ; connectSuccess{wifiConnectInfo -> }; connectFail{connectFailType -> } Lambda表达式
+     * @param connectCallback 支持 start{} ; connectSuccess{wifiConnectInfo -> }; connectFail{connectFailType -> } Lambda表达式
      *
      */
     fun connect(
@@ -61,8 +62,7 @@ class WifiConnector private constructor() {
         connectCallback: WifiConnectCallback.() -> Unit,
     ) {
         if (!::mWifiManager.isInitialized) {
-            DefaultLogger.error(message = "WifiConnector未初始化，请先调用WifiConnector.init()")
-            return
+            throw InitializationException()
         }
         mDispatcher.connect(ssid, pwd, cipherType, timeoutInMillis, connectCallback)
     }
@@ -70,16 +70,27 @@ class WifiConnector private constructor() {
     /**
      * WiFi 扫描周围设备 入口类
      *
-     * @param 支持 start{} ; scanSuccess{scanResults: MutableList<ScanResult>,parsedScanResult: List<WifiScanResult> ->};
+     * @param scanCallback 支持 start{} 、scanSuccess{scanResults: MutableList<ScanResult>,parsedScanResult: List<WifiScanResult> ->} 、
      * scanFail{scanFailType->} Lambda表达式
      *
      */
     fun scan(scanCallback: WifiScanCallback.() -> Unit) {
         if (!::mWifiManager.isInitialized) {
-            DefaultLogger.error(message = "WifiConnector未初始化，请先调用WifiConnector.init()")
-            return
+           throw InitializationException()
         }
         mDispatcher.startScan(scanCallback)
+    }
+
+
+    /**
+     * 连接过程中，主动取消连接任务
+     *
+     * Android Q之前的设备,连接过程中主动取消连接任务, callConnectFail回调会触发，回调传入的参数为[ConnectFailType.CancelByChoice]
+     * Android Q或者Android Q后设备，不支持连接时取消任务
+     *
+     */
+    fun stopConnect(){
+        mDispatcher.stopConnect()
     }
 
     /**

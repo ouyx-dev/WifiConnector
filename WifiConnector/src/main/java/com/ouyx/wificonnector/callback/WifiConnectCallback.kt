@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 /**
  *  Wifi连接回调
  *
- * @author admin
+ * @author ouyx
  * @date 2023年07月06日 15时07分
  */
 class WifiConnectCallback {

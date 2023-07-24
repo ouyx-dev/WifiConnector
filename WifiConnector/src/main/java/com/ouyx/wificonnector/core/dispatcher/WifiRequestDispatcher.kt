@@ -12,6 +12,7 @@ import com.ouyx.wificonnector.core.request.WifiConnectRequest
 import com.ouyx.wificonnector.core.request.WifiConnectRequestQ
 import com.ouyx.wificonnector.core.request.WifiScanRequest
 import com.ouyx.wificonnector.data.WifiCipherType
+import com.ouyx.wificonnector.util.DefaultLogger
 import kotlinx.coroutines.*
 
 
@@ -26,13 +27,10 @@ class WifiRequestDispatcher : IRequestDispatcher {
 
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val defaultScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     internal fun getMainScope() = mainScope
 
     internal fun getIOScope() = ioScope
-
-    internal fun getDefaultScope() = defaultScope
 
     /**
      *  AndroidQ之后，当前连接请求
@@ -64,12 +62,15 @@ class WifiRequestDispatcher : IRequestDispatcher {
     ) {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            mConnectRequestQ?.release()
-            mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
-        } else {
-            WifiConnectRequest.getInstance().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
-        }
+
+
+        WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//            mConnectRequestQ?.release()
+//            mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
+//        } else {
+//            WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+//        }
     }
 
     override fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
@@ -78,22 +79,31 @@ class WifiRequestDispatcher : IRequestDispatcher {
         WifiScanRequest.getInstance().startScan(wifiScanCallback)
     }
 
+    /**
+     * 连接过程中，主动取消连接任务
+     */
+    fun stopConnect(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            DefaultLogger.error(message = "当前设备是Android 10 或者Android 10后设备，不支持连接时用户主动取消！")
+        } else {
+            WifiConnectRequest.get().stopConnect()
+        }
+    }
+
 
     /**
      *  回收所有资源
      */
     fun release() {
-
         WifiScanRequest.getInstance().release()
 
         mConnectRequestQ?.release()
         mConnectRequestQ = null
 
-        WifiConnectRequest.getInstance().release()
+        WifiConnectRequest.get().release()
 
         mainScope.cancel()
         ioScope.cancel()
-        defaultScope.cancel()
 
         // mainScope  ioScope defaultScope  是 INSTANCE 创建时创建出来的，销毁的时候也要一起
         INSTANCE = null
@@ -107,7 +117,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
 
         mConnectRequestQ?.removeCallback()
 
-        WifiConnectRequest.getInstance().removeCallback()
+        WifiConnectRequest.get().removeCallback()
     }
 
 }

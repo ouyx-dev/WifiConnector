@@ -19,7 +19,6 @@ abstract class BaseRequest {
 
     fun getWifiConnector() = WifiConnector.get()
 
-
     fun getApplication() = WifiConnector.get().mApplication
 
     fun getWifiManager() = WifiConnector.get().mWifiManager

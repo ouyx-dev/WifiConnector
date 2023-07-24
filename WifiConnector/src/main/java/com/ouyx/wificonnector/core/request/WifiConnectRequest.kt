@@ -15,7 +15,6 @@ import android.content.IntentFilter
 import android.net.NetworkInfo
 import android.net.NetworkInfo.DetailedState
 import android.net.wifi.WifiConfiguration
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Parcelable
 import android.text.TextUtils
@@ -73,7 +72,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     companion object {
         @Volatile
         private var INSTANCE: WifiConnectRequest? = null
-        fun getInstance(): WifiConnectRequest =
+        fun get(): WifiConnectRequest =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: WifiConnectRequest().also { INSTANCE = it }
             }
@@ -84,14 +83,9 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
                 val action = intent.action
-                if (action == WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION) {
-                    val linkWifiResult = intent.getIntExtra(WifiManager.EXTRA_SUPPLICANT_ERROR, 123)
-                    if (linkWifiResult == WifiManager.ERROR_AUTHENTICATING) {
-                        DefaultLogger.debug(message = "密码错误")
-                    }
-                } else if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+                if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
                     val networkState =
-                        (intent.getParcelableExtra<Parcelable>(WifiManager.EXTRA_NETWORK_INFO) as NetworkInfo?)!!.detailedState
+                        (intent.getParcelableExtra<Parcelable>(WifiManager.EXTRA_NETWORK_INFO) as NetworkInfo).detailedState
                     handleNetState(networkState)
                 }
             }
@@ -139,17 +133,17 @@ class WifiConnectRequest private constructor() : BaseRequest() {
             return
         }
 
-        if (pwd != null && !WifiUtil.isAsciiEncodable(pwd)) {
+        if (pwd != null && !WifiUtil.isTextAsciiEncodable(pwd)) {
             mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
             return
         }
 
-        if(ssid.trim().isEmpty()){
+        if (ssid.trim().isEmpty()) {
             mConnectCallback?.callConnectFail(ConnectFailType.SsidInvalid)
             return
         }
 
-        if (!isWifiEnable()) {
+        if (!WifiUtil.isWifiEnable(getWifiManager())) {
             mConnectCallback?.callConnectFail(ConnectFailType.WifiNotEnable)
             return
         }
@@ -165,7 +159,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
             return
         }
 
-
         mConnectJob = ioScope.launch {
             withTimeout(mTimeoutInMillis) {
                 isConnecting.set(true)
@@ -178,14 +171,16 @@ class WifiConnectRequest private constructor() : BaseRequest() {
 
         mConnectJob?.invokeOnCompletion { it ->
             isConnecting.set(false)
-            mExistingConfiguration?.let {
-                getWifiManager().removeNetwork(it.networkId)
-                getWifiManager().saveConfiguration()
-            }
             when (it) {
                 is TimeoutCancellationException -> {
                     DefaultLogger.debug(message = "超时而取消")
                     mConnectCallback?.callConnectFail(ConnectFailType.ConnectTimeout)
+
+                    //连接已保存的配置失败时，需要删除配置防止下次连接继续失败
+                    mExistingConfiguration?.let {
+                        getWifiManager().removeNetwork(it.networkId)
+                        getWifiManager().saveConfiguration()
+                    }
                 }
 
                 is CancelReason -> {
@@ -206,13 +201,15 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                     }
                 }
             }
-
         }
     }
 
 
     /**
-     * 连接过程中，主动取消连接任务
+     * 连接时主动取消连接任务,支持Android Q之前的设备
+     *
+     * Android Q或者Android Q后设备，不支持连接时取消任务
+     *
      */
     fun stopConnect() {
         mConnectJob?.cancel(CancelReason.CancelByChoice)
@@ -380,12 +377,5 @@ class WifiConnectRequest private constructor() : BaseRequest() {
         }
         return WifiUtil.isHex(wepKey)
     }
-
-
-    /**
-     * WIFI 是否开启
-     */
-    private fun isWifiEnable() = getWifiManager().isWifiEnabled
-
 
 }

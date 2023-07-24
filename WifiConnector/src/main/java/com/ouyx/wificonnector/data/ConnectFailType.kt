@@ -64,7 +64,7 @@ sealed class ConnectFailType {
 
 
     /**
-     * 连接失败
+     * 连接不可达
      */
     object ConnectUnavailable : ConnectFailType()
 

@@ -98,7 +98,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                         ConnectFailType.PermissionNotEnough -> "权限不够"
                         is ConnectFailType.SSIDConnected -> "目标SSID 已连接[${it.wifiConnectInfo}]"
                         ConnectFailType.WifiNotEnable -> "WIFI未开启"
-                        ConnectFailType.ConnectUnavailable -> "连接失败"
+                        ConnectFailType.ConnectUnavailable -> "连接不可达"
                         ConnectFailType.EncryptionPasswordNotNull -> "加密时密码不能为空"
                         ConnectFailType.PasswordMustASCIIEncoded -> "秘密必须被ASCII编码"
                         ConnectFailType.SsidInvalid -> "SSID 无效"

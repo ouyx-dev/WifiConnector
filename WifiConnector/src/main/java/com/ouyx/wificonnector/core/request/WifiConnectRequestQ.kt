@@ -118,7 +118,7 @@ class WifiConnectRequestQ : BaseRequest() {
             return
         }
 
-        if (pwd != null && !WifiUtil.isAsciiEncodable(pwd)) {
+        if (pwd != null && !WifiUtil.isTextAsciiEncodable(pwd)) {
             mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
             return
         }

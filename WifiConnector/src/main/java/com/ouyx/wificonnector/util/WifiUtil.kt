@@ -147,7 +147,8 @@ object WifiUtil {
     /**
      * 获取 mac 地址
      */
-    fun getMacAddress(wifiManager: WifiManager) = wifiManager.connectionInfo.macAddress
+    @SuppressLint("HardwareIds")
+    fun getMacAddress(wifiManager: WifiManager): String = wifiManager.connectionInfo.macAddress
 
 
     /**
@@ -197,7 +198,7 @@ object WifiUtil {
      *
      */
     fun analyzeWifiCipherType(capabilities: String?): WifiCipherType {
-        if (capabilities == null || capabilities.isEmpty()) {
+        if (capabilities.isNullOrEmpty()) {
             return WifiCipherType.NO_PASS
         }
         return if (capabilities.contains("WPA3")) {
@@ -213,8 +214,9 @@ object WifiUtil {
 
     /**
      * 判断一个字符串是否可以进行ASCII编码
+     *
      */
-    fun isAsciiEncodable(str: String): Boolean {
+    fun isTextAsciiEncodable(str: String): Boolean {
         return str.toCharArray().all { it.toInt() in 0..127 }
     }
 
