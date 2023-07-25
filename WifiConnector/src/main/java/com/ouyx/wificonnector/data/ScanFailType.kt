@@ -5,6 +5,8 @@
  */
 package com.ouyx.wificonnector.data
 
+import android.net.wifi.WifiManager
+
 
 /**
  * wifi 扫描 失败情况
@@ -35,5 +37,10 @@ sealed class ScanFailType {
      * 正在扫描
      */
     object ScanningInProgress : ScanFailType()
+
+    /**
+     * 收到 SCAN_RESULTS_AVAILABLE_ACTION 广播 后，ScanResult WiFi扫描列表未更新
+     */
+    object ResultNotUpdated : ScanFailType()
 
 }

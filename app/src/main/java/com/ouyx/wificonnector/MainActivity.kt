@@ -33,7 +33,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
 
-        WifiConnector.get().init(application)
+        WifiConnector.get().init(application,)
 
         viewBinding.radiosCipher.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
@@ -141,6 +141,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     ScanFailType.PermissionNotGranted -> "需要ACCESS_FINE_LOCATION 和 CHANGE_WIFI_STATE 权限，参考https://developer.android.com/guide/topics/connectivity/wifi-scan?hl=zh-cn"
                     ScanFailType.ScanningInProgress -> "当前正在扫描，请稍后再试.."
                     ScanFailType.StartScanError -> "由于短时间扫描过多，扫描请求可能遭到节流"
+                    ScanFailType.ResultNotUpdated -> "WiFi扫描列表未更新"
                 }
                 mListAdapter.setHeaderView(getErrorView(errorMsg))
 

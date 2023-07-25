@@ -22,7 +22,7 @@ import kotlinx.coroutines.*
  * @author ouyx
  * @date 2023年07月10日 15时22分
  */
-class WifiRequestDispatcher : IRequestDispatcher {
+class WifiRequestDispatcher : IWiFiRequestDispatcher {
     private val mainScope = MainScope()
 
     private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -63,14 +63,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
 
-
         WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-//            mConnectRequestQ?.release()
-//            mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
-//        } else {
-//            WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
-//        }
     }
 
     override fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
@@ -82,7 +75,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
     /**
      * 连接过程中，主动取消连接任务
      */
-    fun stopConnect(){
+    override fun stopConnect(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             DefaultLogger.error(message = "当前设备是Android 10 或者Android 10后设备，不支持连接时用户主动取消！")
         } else {
@@ -94,7 +87,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
     /**
      *  回收所有资源
      */
-    fun release() {
+    override fun release() {
         WifiScanRequest.getInstance().release()
 
         mConnectRequestQ?.release()
@@ -112,7 +105,7 @@ class WifiRequestDispatcher : IRequestDispatcher {
     /**
      * 解除所有 CallBack
      */
-    fun removeAllCallBack() {
+    override fun removeAllCallback() {
         WifiScanRequest.getInstance().removeCallback()
 
         mConnectRequestQ?.removeCallback()

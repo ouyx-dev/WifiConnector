@@ -10,6 +10,7 @@ import android.content.Context
 import android.net.wifi.WifiManager
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
+import com.ouyx.wificonnector.core.dispatcher.IWiFiRequestDispatcher
 import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
 import com.ouyx.wificonnector.data.ConnectFailType
 import com.ouyx.wificonnector.data.WifiCipherType
@@ -26,7 +27,7 @@ class WifiConnector private constructor() {
 
     lateinit var mWifiManager: WifiManager
 
-    private lateinit var mDispatcher: WifiRequestDispatcher
+    private lateinit var mDispatcher: IWiFiRequestDispatcher
 
     companion object {
         @Volatile
@@ -50,8 +51,11 @@ class WifiConnector private constructor() {
      * @param ssid
      * @param pwd
      * @param cipherType 支持 WAP2 WAP3  WEP NO_PASS, 默认WPA2
-     * @param timeoutInMillis Android Q 及 以后 不支持超时，因为有有系统弹框活系统页面辅助连接； Android Q 之前 支持超时，默认5s
-     * @param connectCallback 支持 start{} ; connectSuccess{wifiConnectInfo -> }; connectFail{connectFailType -> } Lambda表达式
+     * @param timeoutInMillis Android Q 及 以后 不支持超时，因为有有系统弹框活系统页面辅助连接；
+     * Android Q 之前 支持超时，默认5s
+     *
+     * @param connectCallback 支持 start{} ; connectSuccess{wifiConnectInfo -> };
+     *  connectFail{connectFailType -> } Lambda表达式
      *
      */
     fun connect(
@@ -68,15 +72,24 @@ class WifiConnector private constructor() {
     }
 
     /**
-     * WiFi 扫描周围设备 入口类
+     * 扫描获取附近WIFI设备
      *
-     * @param scanCallback 支持 start{} 、scanSuccess{scanResults: MutableList<ScanResult>,parsedScanResult: List<WifiScanResult> ->} 、
-     * scanFail{scanFailType->} Lambda表达式
-     *
+     * @param scanCallback : 支持Lambda表达式 ，定义了三个函数 onScanStart、onScanSuccess和 onScanFail
+     *  具体使用方式：
+     *  WifiConnector.get().scan {
+     *      onScanStart  {
+     *       }
+     *      onScanSuccess { scanResults, parsedScanResults ->
+     *          // 扫描成功
+     *      }
+     *      onScanFail  { scanFailType ->
+     *         // 扫描失败
+     *      }
+     *  }
      */
     fun scan(scanCallback: WifiScanCallback.() -> Unit) {
         if (!::mWifiManager.isInitialized) {
-           throw InitializationException()
+            throw InitializationException()
         }
         mDispatcher.startScan(scanCallback)
     }
@@ -85,11 +98,13 @@ class WifiConnector private constructor() {
     /**
      * 连接过程中，主动取消连接任务
      *
-     * Android Q之前的设备,连接过程中主动取消连接任务, callConnectFail回调会触发，回调传入的参数为[ConnectFailType.CancelByChoice]
+     * Android Q之前的设备,连接过程中调用[stopConnect], [WifiConnectCallback.connectFail]回调方法会触发，
+     * 方法参数为[ConnectFailType.CancelByChoice]
+     *
      * Android Q或者Android Q后设备，不支持连接时取消任务
      *
      */
-    fun stopConnect(){
+    fun stopConnect() {
         mDispatcher.stopConnect()
     }
 
@@ -97,8 +112,9 @@ class WifiConnector private constructor() {
      * 移除所有回调
      */
     fun removeAllCallback() {
-        mDispatcher.removeAllCallBack()
+        mDispatcher.removeAllCallback()
     }
+
 
     /**
      * 回收所有资源

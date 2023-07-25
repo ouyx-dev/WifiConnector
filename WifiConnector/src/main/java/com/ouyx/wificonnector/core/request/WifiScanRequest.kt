@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
- * 管理 WIFI Scan
+ * 管理 WiFi Scan
  *
  * @author ouyx
  * @date 2023年07月10日 16时17分
@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class WifiScanRequest : BaseRequest() {
 
     private var mScanCallback: WifiScanCallback? = null
+
     private val isScanning = AtomicBoolean(false)
 
     companion object {
@@ -47,11 +48,11 @@ class WifiScanRequest : BaseRequest() {
                 val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
                 if (success) {
                     scanSuccess()
-                }else{
-                    //  通过 getWifiManager().startScan()返回值 已处理，此处不用处理
-                    DefaultLogger.error(message = "scan fail!")
+                } else {
+                    DefaultLogger.warning(message = "收到 SCAN_RESULTS_AVAILABLE_ACTION 广播，ScanResult未更新")
+                    mScanCallback?.callScanFail(ScanFailType.ResultNotUpdated)
+                    removeCallback()
                 }
-
             }
         }
     }
@@ -66,27 +67,32 @@ class WifiScanRequest : BaseRequest() {
         mScanCallback = scanCallback
 
         if (isScanning.get()) {
+            DefaultLogger.warning(message = "扫描正在进行请稍后...")
             scanCallback.callScanFail(ScanFailType.ScanningInProgress)
             return
         }
 
         if (!WifiUtil.isPermissionScan(getApplication())) {
+            DefaultLogger.warning(message = "权限不够...")
             scanCallback.callScanFail(ScanFailType.PermissionNotGranted)
             return
         }
 
         if (!WifiUtil.isLocationEnabled(getApplication())) {
+            DefaultLogger.warning(message = "信息是否开启 无法开启扫描...")
             scanCallback.callScanFail(ScanFailType.LocationNotEnable)
             return
         }
 
         if (!getWifiManager().startScan()) {
+            DefaultLogger.warning(message = "WifiManager.startScan()启动失败,返回false")
             mScanCallback?.callScanFail(ScanFailType.StartScanError)
+            // 移除回调，防止多次调用, 收到广播可能再次回调
+            removeCallback()
         } else {
             isScanning.set(true)
             mScanCallback?.callScanStart()
         }
-
     }
 
     /**
@@ -109,12 +115,13 @@ class WifiScanRequest : BaseRequest() {
     private fun scanSuccess() {
         isScanning.set(false)
         if (ActivityCompat.checkSelfPermission(getApplication(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            DefaultLogger.warning(message = "开启扫描后 权限不够...")
             mScanCallback?.callScanFail(ScanFailType.PermissionNotGranted)
             return
         }
         val systemWiFiScanList = getWifiManager().scanResults
         val parsedScanResult: List<WifiScanResult> =
-            systemWiFiScanList.filter { !it.SSID.isNullOrEmpty()}.distinctBy { it.SSID }.sortedByDescending { it.level }.map {
+            systemWiFiScanList.filter { !it.SSID.isNullOrEmpty() }.distinctBy { it.SSID }.sortedByDescending { it.level }.map {
                 WifiScanResult(
                     ssid = it.SSID,
                     level = WifiUtil.analyzeSignalStrength(it.level),
@@ -122,7 +129,9 @@ class WifiScanRequest : BaseRequest() {
                 )
             }
 
-        mScanCallback?.callScanSuccess(getWifiManager().scanResults,parsedScanResult)
+        mScanCallback?.callScanSuccess(getWifiManager().scanResults, parsedScanResult)
+
+        removeCallback()
     }
 
 }
