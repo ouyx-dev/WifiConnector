@@ -10,7 +10,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            android:text="成功"
+            android:text="扫描成功"
             android:gravity="center_vertical" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

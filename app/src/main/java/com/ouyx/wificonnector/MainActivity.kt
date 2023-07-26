@@ -33,19 +33,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
 
-        WifiConnector.get().init(application,)
+        WifiConnector.get().init(application)
 
         viewBinding.radiosCipher.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
                 viewBinding.radioWep.id -> {
                     mChipType = WifiCipherType.WEP
                 }
+
                 viewBinding.radioWpa2.id -> {
                     mChipType = WifiCipherType.WPA2
                 }
+
                 viewBinding.radioWpa3.id -> {
                     mChipType = WifiCipherType.WPA3
                 }
+
                 viewBinding.radioNoPass.id -> {
                     mChipType = WifiCipherType.NO_PASS
                 }
@@ -67,13 +70,24 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             }
         }
 
-
         viewBinding.btnScan.setOnClickListener {
             requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION), agree = {
                 startScan()
             }, disAgree = {
                 DefaultLogger.error(message = "没有权限!")
             })
+        }
+
+        mListAdapter.setOnItemClickListener { _, _, position ->
+            val wifiScanItem = mListAdapter.data[position]
+            viewBinding.editSsid.setText(wifiScanItem.ssid)
+            viewBinding.editPassword.setText("")
+            when (wifiScanItem.cipherType) {
+                WifiCipherType.WEP -> viewBinding.radioWep.isChecked = true
+                WifiCipherType.WPA2 -> viewBinding.radioWpa2.isChecked = true
+                WifiCipherType.WPA3 -> viewBinding.radioWpa3.isChecked = true
+                WifiCipherType.NO_PASS -> viewBinding.radioNoPass.isChecked = true
+            }
         }
 
     }
@@ -140,7 +154,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                     ScanFailType.LocationNotEnable -> "位置信息未开启"
                     ScanFailType.PermissionNotGranted -> "需要ACCESS_FINE_LOCATION 和 CHANGE_WIFI_STATE 权限，参考https://developer.android.com/guide/topics/connectivity/wifi-scan?hl=zh-cn"
                     ScanFailType.ScanningInProgress -> "当前正在扫描，请稍后再试.."
-                    ScanFailType.StartScanError -> "由于短时间扫描过多，扫描请求可能遭到节流"
+                    ScanFailType.StartScanFail -> "由于短时间扫描过多，扫描请求可能遭到节流"
                     ScanFailType.ResultNotUpdated -> "WiFi扫描列表未更新"
                 }
                 mListAdapter.setHeaderView(getErrorView(errorMsg))

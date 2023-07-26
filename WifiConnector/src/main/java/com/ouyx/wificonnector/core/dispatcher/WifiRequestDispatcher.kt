@@ -63,12 +63,18 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
 
-        WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            mConnectRequestQ?.release()
+            mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
+        } else {
+            WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+        }
     }
 
     override fun startScan(scanCallback: WifiScanCallback.() -> Unit) {
         val wifiScanCallback = WifiScanCallback()
         scanCallback.invoke(wifiScanCallback)
+
         WifiScanRequest.getInstance().startScan(wifiScanCallback)
     }
 

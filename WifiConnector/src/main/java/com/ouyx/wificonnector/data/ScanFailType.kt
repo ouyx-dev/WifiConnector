@@ -5,8 +5,6 @@
  */
 package com.ouyx.wificonnector.data
 
-import android.net.wifi.WifiManager
-
 
 /**
  * wifi 扫描 失败情况
@@ -31,7 +29,7 @@ sealed class ScanFailType {
      * 设备处于空闲状态，扫描已停用。
      *  WLAN 硬件报告扫描失败。
      */
-    object StartScanError : ScanFailType()
+    object StartScanFail : ScanFailType()
 
     /**
      * 正在扫描
