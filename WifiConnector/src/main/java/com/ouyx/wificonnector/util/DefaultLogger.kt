@@ -47,19 +47,10 @@ internal object DefaultLogger {
 
 
     private fun getExtInfo(stackTraceElement: StackTraceElement): String {
-        val separator = " & "
         val sb = StringBuilder("\t[")
         if (isShowStackTrace) {
             val threadName = Thread.currentThread().name
-            val fileName = stackTraceElement.fileName
-            val className = stackTraceElement.className
-            val methodName = stackTraceElement.methodName
-            val lineNumber = stackTraceElement.lineNumber
-            sb.append("ThreadName=").append(threadName).append(separator)
-            sb.append("FileName=").append(fileName).append(separator)
-            sb.append("ClassName=").append(className).append(separator)
-            sb.append("MethodName=").append(methodName).append(separator)
-            sb.append("LineNumber=").append(lineNumber)
+            sb.append("ThreadName=").append(threadName)
         }
         sb.append(" ] ")
         return sb.toString()

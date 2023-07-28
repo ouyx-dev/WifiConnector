@@ -120,7 +120,9 @@ class WifiScanRequest : BaseRequest() {
         val parsedScanResult: List<WifiScanResult> =
             systemWiFiScanList
                 .filter { !it.SSID.isNullOrEmpty() }
+                .asReversed()
                 .distinctBy { it.SSID }
+                .asReversed()
                 .sortedByDescending { it.level }
                 .map {
                     WifiScanResult(

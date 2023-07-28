@@ -11,17 +11,19 @@ package com.ouyx.wificonnector.data
  *
  * @author ouyx
  * @date 2023年07月06日 15时18分
+ *
+ * @param name: SSID
+ * @param ip： 默认是IpV4
+ * @param gateWay : 网关地址的字符串形式
  */
 data class WifiConnectInfo(
     var name: String? = null,
     var ip: String? = null,
-    var mac: String? = null,
     var gateWay: String? = null
 ) {
     override fun toString(): String = "WifiConnectInfo{" +
             "name='" + name + '\'' +
             ", ip='" + ip + '\'' +
-            ", mac='" + mac + '\'' +
             ", gateWay='" + gateWay + '\'' +
             '}'
 

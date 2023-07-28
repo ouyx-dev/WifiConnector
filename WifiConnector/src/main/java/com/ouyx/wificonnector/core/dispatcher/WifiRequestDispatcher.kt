@@ -63,6 +63,7 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
 
+        DefaultLogger.info(message = "设备当前SDK版本 = ${Build.VERSION.SDK_INT}")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             mConnectRequestQ?.release()
             mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
@@ -81,7 +82,7 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
     /**
      * 连接过程中，主动取消连接任务
      */
-    override fun stopConnect(){
+    override fun stopConnect() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             DefaultLogger.error(message = "当前设备是Android 10 或者Android 10后设备，不支持连接时用户主动取消！")
         } else {

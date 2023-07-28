@@ -2,8 +2,14 @@ package com.ouyx.wificonnector
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.net.ConnectivityManager
+import android.net.ConnectivityManager.NetworkCallback
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ouyx.wificonnector.data.ConnectFailType
@@ -21,6 +27,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private var mChipType = WifiCipherType.WPA2
     private var mListAdapter: ScanListAdapter = ScanListAdapter()
 
+    private val log: DefaultLogger = DefaultLogger()
 
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,23 +66,30 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 requestPermission(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), agree = {
                     startConnect()
                 }, disAgree = {
-                    DefaultLogger.info(message = "权限拒绝")
+                    log.info(message = "权限拒绝")
                 })
             } else {
-                requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION), agree = {
-                    startConnect()
-                }, disAgree = {
-                    DefaultLogger.info(message = "权限拒绝")
-                })
+                requestPermission(
+                    arrayOf(
+                        Manifest.permission.CHANGE_WIFI_STATE,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ), agree = {
+                        startConnect()
+                    }, disAgree = {
+                        log.info(message = "权限拒绝")
+                    })
             }
         }
 
         viewBinding.btnScan.setOnClickListener {
-            requestPermission(arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION), agree = {
-                startScan()
-            }, disAgree = {
-                DefaultLogger.error(message = "没有权限!")
-            })
+            requestPermission(
+                arrayOf(Manifest.permission.CHANGE_WIFI_STATE, Manifest.permission.ACCESS_FINE_LOCATION),
+                agree = {
+                    startScan()
+                },
+                disAgree = {
+                    log.error(message = "没有权限!")
+                })
         }
 
         mListAdapter.setOnItemClickListener { _, _, position ->
@@ -90,18 +104,25 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             }
         }
 
+        viewBinding.butTest.setOnClickListener {
+            test()
+        }
+
+
+        test()
     }
+
 
     @SuppressLint("SetTextI18n")
     private fun startConnect() {
         WifiConnector.get()
             .connect(viewBinding.editSsid.text.toString(), viewBinding.editPassword.text.toString(), mChipType) {
                 onConnectStart {
-                    DefaultLogger.debug(message = "onConnectStart>>>")
+                    log.debug(message = "onConnectStart>>>")
                     viewBinding.txtLog.text = "连接中..."
                 }
                 onConnectSuccess {
-                    DefaultLogger.debug(message = "onConnectSuccess\n $it")
+                    log.debug(message = "onConnectSuccess\n $it")
                     viewBinding.txtLog.text = "onConnectSuccess\n$it"
                 }
                 onConnectFail {
@@ -117,7 +138,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                         ConnectFailType.PasswordMustASCIIEncoded -> "秘密必须被ASCII编码"
                         ConnectFailType.SsidInvalid -> "SSID 无效"
                     }
-                    DefaultLogger.debug(message = "onConnectFail: $cause")
+                    log.debug(message = "onConnectFail: $cause")
                     viewBinding.txtLog.text = "onConnectFail: $cause"
                 }
             }
@@ -132,17 +153,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             onScanStart {
                 mListAdapter.setHeaderView(getScanningView())
 
-                DefaultLogger.debug(message = "onScanStart")
+                log.debug(message = "onScanStart")
             }
             onScanSuccess { scanResults, parsedScanResults ->
                 mListAdapter.setHeaderView(getSuccessView())
 
-                DefaultLogger.debug(message = "onScanSuccess: $scanResults")
+                log.debug(message = "onScanSuccess: $scanResults")
                 parsedScanResults.forEach {
                     val ssid = it.ssid
                     val level = it.level
                     val capabilities = it.cipherType
-                    DefaultLogger.info(message = "ssid = $ssid   level = $level   capabilities = $capabilities ")
+                    log.info(message = "ssid = $ssid   level = $level   capabilities = $capabilities ")
                 }
                 mListAdapter.setList(parsedScanResults)
             }
@@ -159,7 +180,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 }
                 mListAdapter.setHeaderView(getErrorView(errorMsg))
 
-                DefaultLogger.debug(message = "onScanFail: $errorMsg")
+                log.debug(message = "onScanFail: $errorMsg")
             }
         }
     }
@@ -182,6 +203,45 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         return scanningSuccessBinding.root
     }
 
+
+    private fun test() {
+        registerNetworkCallback()
+    }
+
+
+    private lateinit var networkCallback: NetworkCallback
+    private fun registerNetworkCallback() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+
+            // 创建网络请求
+            val builder = NetworkRequest.Builder()
+            builder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+
+            // 创建网络回调
+            networkCallback = object : NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    log.debug(message = "onAvailable: WiFi connected")
+                    // WiFi已连接
+                }
+
+                override fun onLost(network: Network) {
+                    log.debug(message = "onLost: WiFi disconnected")
+                    // WiFi已断开连接
+                }
+            }
+
+            // 注册网络回调
+            connectivityManager.registerNetworkCallback(builder.build(), networkCallback)
+        }
+    }
+
+    private fun unregisterNetworkCallback() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            connectivityManager.unregisterNetworkCallback(networkCallback)
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()

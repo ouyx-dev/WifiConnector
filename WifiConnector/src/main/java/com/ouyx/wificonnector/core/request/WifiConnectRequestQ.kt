@@ -9,6 +9,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -54,18 +55,16 @@ class WifiConnectRequestQ : BaseRequest() {
     private var mConnectivityManager: ConnectivityManager? = null
 
 
-    private val mNetworkCallback = object : ConnectivityManager.NetworkCallback() {
+    private val mNetworkCallback = object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
             val connectedSSID = WifiUtil.getConnectedSsid(getWifiManager())?.replace("\"", "")
             val wifiConnectedInfo = WifiConnectInfo().apply {
                 name = connectedSSID
                 ip = WifiUtil.getIpAddress(getWifiManager())
-                mac = WifiUtil.getMacAddress(getWifiManager())
                 gateWay = WifiUtil.getGateway(getWifiManager())
             }
             DefaultLogger.debug(message = "onAvailable=${network.describeContents()} ,  connectInfo =${wifiConnectedInfo}")
-
             mConnectCallback?.callConnectSuccess(wifiConnectedInfo)
         }
 
@@ -99,26 +98,31 @@ class WifiConnectRequestQ : BaseRequest() {
         mCipherType = cipherType
 
         if (!WifiUtil.isPermissionConnect(getApplication())) {
+            DefaultLogger.warning(message = "connect 权限不够 ")
             mConnectCallback?.callConnectFail(ConnectFailType.PermissionNotEnough)
             return
         }
 
         if (!isWifiEnable()) {
+            DefaultLogger.warning(message = "wifi 未开启 ")
             mConnectCallback?.callConnectFail(ConnectFailType.WifiNotEnable)
             return
         }
 
-        if(ssid.trim().isEmpty()){
+        if (ssid.trim().isEmpty()) {
+            DefaultLogger.warning(message = " 输入的ssid 是空的 ")
             mConnectCallback?.callConnectFail(ConnectFailType.SsidInvalid)
             return
         }
 
         if (cipherType != NO_PASS && pwd.isNullOrEmpty()) {
+            DefaultLogger.warning(message = "加密模式下，密码不能为空 ")
             mConnectCallback?.callConnectFail(ConnectFailType.EncryptionPasswordNotNull)
             return
         }
 
-        if (pwd != null && !WifiUtil.isTextAsciiEncodable(pwd)) {
+        if (pwd != null && !WifiUtil.isTextAsciiEncode(pwd)) {
+            DefaultLogger.warning(message = " 密码必须是ASCII")
             mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
             return
         }
@@ -128,15 +132,12 @@ class WifiConnectRequestQ : BaseRequest() {
             val wifiConnectedInfo = WifiConnectInfo().apply {
                 name = ssid
                 ip = WifiUtil.getIpAddress(getWifiManager())
-                mac = WifiUtil.getMacAddress(getWifiManager())
                 gateWay = WifiUtil.getGateway(getWifiManager())
             }
             mConnectCallback?.callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
             return
         }
-
         connect()
-
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
@@ -148,9 +149,11 @@ class WifiConnectRequestQ : BaseRequest() {
             WEP, NO_PASS -> {
                 builder.setSsid(mTargetSSID)
             }
+
             WPA2 -> {
                 builder.setSsid(mTargetSSID).setWpa2Passphrase(mPwd!!)
             }
+
             WPA3 -> {
                 builder.setSsid(mTargetSSID).setWpa3Passphrase(mPwd!!)
             }
@@ -161,7 +164,8 @@ class WifiConnectRequestQ : BaseRequest() {
             .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .setNetworkSpecifier(wifiNetworkSpecifier)
             .build()
-        mConnectivityManager = getApplication().getSystemService(AppCompatActivity.CONNECTIVITY_SERVICE) as ConnectivityManager
+        mConnectivityManager =
+            getApplication().getSystemService(AppCompatActivity.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         // 连接wifi
         mConnectivityManager?.requestNetwork(request, mNetworkCallback)

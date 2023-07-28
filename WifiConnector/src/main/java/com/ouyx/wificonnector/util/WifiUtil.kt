@@ -144,12 +144,6 @@ object WifiUtil {
         intToInetAddress(wifiManager.connectionInfo.ipAddress)?.hostAddress
 
 
-    /**
-     * 获取 mac 地址
-     */
-    @SuppressLint("HardwareIds")
-    fun getMacAddress(wifiManager: WifiManager): String = wifiManager.connectionInfo.macAddress
-
 
     /**
      * 获取网关地址
@@ -216,7 +210,7 @@ object WifiUtil {
      * 判断一个字符串是否可以进行ASCII编码
      *
      */
-    fun isTextAsciiEncodable(str: String): Boolean {
+    fun isTextAsciiEncode(str: String): Boolean {
         return str.toCharArray().all { it.toInt() in 0..127 }
     }
 

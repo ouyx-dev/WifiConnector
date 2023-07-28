@@ -133,7 +133,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
             return
         }
 
-        if (pwd != null && !WifiUtil.isTextAsciiEncodable(pwd)) {
+        if (pwd != null && !WifiUtil.isTextAsciiEncode(pwd)) {
             mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
             return
         }
@@ -152,7 +152,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
             val wifiConnectedInfo = WifiConnectInfo().apply {
                 name = ssid
                 ip = WifiUtil.getIpAddress(getWifiManager())
-                mac = WifiUtil.getMacAddress(getWifiManager())
                 gateWay = WifiUtil.getGateway(getWifiManager())
             }
             mConnectCallback?.callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
@@ -283,7 +282,6 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 val wifiConnectedInfo = WifiConnectInfo().apply {
                     name = connectedSSID
                     ip = WifiUtil.getIpAddress(getWifiManager())
-                    mac = WifiUtil.getMacAddress(getWifiManager())
                     gateWay = WifiUtil.getGateway(getWifiManager())
                 }
 
