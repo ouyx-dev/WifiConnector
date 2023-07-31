@@ -19,6 +19,7 @@ import com.ouyx.wificonnector.databinding.ActivityMainBinding
 import com.ouyx.wificonnector.databinding.ScanningBinding
 import com.ouyx.wificonnector.databinding.ScanningFailBinding
 import com.ouyx.wificonnector.databinding.ScanningSuccessBinding
+import com.ouyx.wificonnector.launch.WiFiOptions
 import com.ouyx.wificonnector.launch.WifiConnector
 
 
@@ -40,7 +41,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
 
-        WifiConnector.get().init(application)
+        val options = WiFiOptions.Builder().setDebug(true).connectTimeoutMsBeforeQ(6000).build()
+        WifiConnector.get().init(application, options = options)
 
         viewBinding.radiosCipher.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
@@ -211,7 +213,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
 
     private lateinit var networkCallback: NetworkCallback
     private fun registerNetworkCallback() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
 
             // 创建网络请求

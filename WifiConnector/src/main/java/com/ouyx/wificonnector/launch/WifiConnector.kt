@@ -15,6 +15,8 @@ import com.ouyx.wificonnector.core.dispatcher.WifiRequestDispatcher
 import com.ouyx.wificonnector.data.ConnectFailType
 import com.ouyx.wificonnector.data.WifiCipherType
 import com.ouyx.wificonnector.exceptions.InitializationException
+import com.ouyx.wificonnector.util.DefaultLogger
+import com.ouyx.wificonnector.Constants.DEFAULT_CONNECT_TIMEOUT_MS_BEFORE_Q
 
 /**
  * Wifi连接 入口
@@ -23,11 +25,14 @@ import com.ouyx.wificonnector.exceptions.InitializationException
  * @date 2023年07月10日 13时55分
  */
 class WifiConnector private constructor() {
+
     lateinit var mApplication: Application
 
     lateinit var mWifiManager: WifiManager
 
     private lateinit var mDispatcher: IWiFiRequestDispatcher
+
+    private lateinit var mWiFiOptions: WiFiOptions
 
     companion object {
         @Volatile
@@ -38,12 +43,17 @@ class WifiConnector private constructor() {
             }
     }
 
-    fun init(application: Application) {
+    fun init(application: Application, options: WiFiOptions = WiFiOptions.getDefaultWiFiOptions()) {
         mApplication = application
         mWifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
         mDispatcher = WifiRequestDispatcher.getInstance()
+        mWiFiOptions = options
+
+        DefaultLogger.setDebug(mWiFiOptions.isDebug)
+
     }
 
+    fun getOptions(): WiFiOptions = mWiFiOptions
 
     /**
      * WiFi连接 入口类
@@ -52,7 +62,7 @@ class WifiConnector private constructor() {
      * @param pwd
      * @param cipherType 支持 WAP2 WAP3  WEP NO_PASS, 默认WPA2
      * @param timeoutInMillis Android Q 及 以后 不支持超时，因为有有系统弹框活系统页面辅助连接；
-     * Android Q 之前 支持超时，默认5s
+     * Android Q 之前 支持超时，默认 [DEFAULT_CONNECT_TIMEOUT_MS_BEFORE_Q]
      *
      * @param connectCallback 支持 start{} ; connectSuccess{wifiConnectInfo -> };
      *  connectFail{connectFailType -> } Lambda表达式
@@ -62,12 +72,13 @@ class WifiConnector private constructor() {
         ssid: String,
         pwd: String?,
         cipherType: WifiCipherType = WifiCipherType.WPA2,
-        timeoutInMillis: Long = 5000,
+        timeoutInMillis: Long? = null,
         connectCallback: WifiConnectCallback.() -> Unit,
     ) {
-        if (!::mWifiManager.isInitialized) {
-            throw InitializationException()
-        }
+        checkInitialization()
+
+        mWiFiOptions.connectTimeoutMsBeforeQ
+
         mDispatcher.connect(ssid, pwd, cipherType, timeoutInMillis, connectCallback)
     }
 
@@ -88,9 +99,8 @@ class WifiConnector private constructor() {
      *  }
      */
     fun scan(scanCallback: WifiScanCallback.() -> Unit) {
-        if (!::mWifiManager.isInitialized) {
-            throw InitializationException()
-        }
+        checkInitialization()
+
         mDispatcher.startScan(scanCallback)
     }
 
@@ -105,6 +115,8 @@ class WifiConnector private constructor() {
      *
      */
     fun stopConnect() {
+        checkInitialization()
+
         mDispatcher.stopConnect()
     }
 
@@ -123,6 +135,13 @@ class WifiConnector private constructor() {
         mDispatcher.release()
     }
 
-
+    /**
+     * 检验 是否初始化
+     */
+    private fun checkInitialization() {
+        if (!::mWifiManager.isInitialized) {
+            throw InitializationException()
+        }
+    }
 
 }

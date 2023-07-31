@@ -12,6 +12,7 @@ import com.ouyx.wificonnector.core.request.WifiConnectRequest
 import com.ouyx.wificonnector.core.request.WifiConnectRequestQ
 import com.ouyx.wificonnector.core.request.WifiScanRequest
 import com.ouyx.wificonnector.data.WifiCipherType
+import com.ouyx.wificonnector.launch.WifiConnector
 import com.ouyx.wificonnector.util.DefaultLogger
 import kotlinx.coroutines.*
 
@@ -31,6 +32,8 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
     internal fun getMainScope() = mainScope
 
     internal fun getIOScope() = ioScope
+
+
 
     /**
      *  AndroidQ之后，当前连接请求
@@ -57,7 +60,7 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
         ssid: String,
         pwd: String?,
         cipherType: WifiCipherType,
-        timeoutInMillis: Long,
+        timeoutInMillis: Long?,
         connectCallback: WifiConnectCallback.() -> Unit,
     ) {
         val wifiConnectCallback = WifiConnectCallback()
@@ -66,9 +69,12 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
         DefaultLogger.info(message = "设备当前SDK版本 = ${Build.VERSION.SDK_INT}")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             mConnectRequestQ?.release()
-            mConnectRequestQ = WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
+            mConnectRequestQ =
+                WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
         } else {
-            WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeoutInMillis, wifiConnectCallback)
+            val timeOut = timeoutInMillis ?: WifiConnector.get().getOptions().connectTimeoutMsBeforeQ
+            DefaultLogger.info(message = "设置的超时时间 = $timeOut")
+            WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeOut, wifiConnectCallback)
         }
     }
 
