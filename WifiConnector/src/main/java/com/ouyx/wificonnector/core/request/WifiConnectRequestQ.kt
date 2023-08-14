@@ -9,7 +9,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.net.wifi.WifiInfo
 import android.net.wifi.WifiNetworkSpecifier
 import android.os.Build
 import androidx.annotation.RequiresApi
@@ -21,6 +20,7 @@ import com.ouyx.wificonnector.data.WifiCipherType.*
 import com.ouyx.wificonnector.data.WifiConnectInfo
 import com.ouyx.wificonnector.util.DefaultLogger
 import com.ouyx.wificonnector.util.WifiUtil
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 /**
@@ -29,7 +29,7 @@ import com.ouyx.wificonnector.util.WifiUtil
  * @author ouyx
  * @date 2023年07月18日 13时59分
  */
-class WifiConnectRequestQ : BaseRequest() {
+class WifiConnectRequestQ private constructor() : BaseRequest() {
 
     private var mConnectCallback: WifiConnectCallback? = null
 
@@ -54,8 +54,24 @@ class WifiConnectRequestQ : BaseRequest() {
 
     private var mConnectivityManager: ConnectivityManager? = null
 
+    /**
+     * 是否注册NetworkCallback
+     *
+     * 对NetworkCallback取消注册 会断开 当前连接
+     */
+    private var isNetworkCallbackRegistered = AtomicBoolean(false)
 
-    private val mNetworkCallback = object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
+    companion object {
+        @Volatile
+        private var INSTANCE: WifiConnectRequestQ? = null
+        fun get(): WifiConnectRequestQ =
+            INSTANCE ?: synchronized(this) {
+                INSTANCE ?: WifiConnectRequestQ().also { INSTANCE = it }
+            }
+    }
+
+
+    private val mNetworkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
             val connectedSSID = WifiUtil.getConnectedSsid(getWifiManager())?.replace("\"", "")
@@ -64,14 +80,14 @@ class WifiConnectRequestQ : BaseRequest() {
                 ip = WifiUtil.getIpAddress(getWifiManager())
                 gateWay = WifiUtil.getGateway(getWifiManager())
             }
-            DefaultLogger.debug(message = "onAvailable=${network.describeContents()} ,  connectInfo =${wifiConnectedInfo}")
-            mConnectCallback?.callConnectSuccess(wifiConnectedInfo)
+            DefaultLogger.debug(message = "onAvailable:  connectInfo =${wifiConnectedInfo}")
+            callConnectSuccess(wifiConnectedInfo)
         }
 
         override fun onUnavailable() {
             super.onUnavailable()
-            DefaultLogger.debug(message = "onUnavailable!")
-            mConnectCallback?.callConnectFail(ConnectFailType.ConnectUnavailable)
+            DefaultLogger.warning(message = "onUnavailable!")
+            callConnectFail(ConnectFailType.ConnectUnavailable)
         }
     }
 
@@ -99,49 +115,55 @@ class WifiConnectRequestQ : BaseRequest() {
 
         if (!WifiUtil.isPermissionConnect(getApplication())) {
             DefaultLogger.warning(message = "connect 权限不够 ")
-            mConnectCallback?.callConnectFail(ConnectFailType.PermissionNotEnough)
+            callConnectFail(ConnectFailType.PermissionNotEnough)
             return
         }
 
         if (!isWifiEnable()) {
             DefaultLogger.warning(message = "wifi 未开启 ")
-            mConnectCallback?.callConnectFail(ConnectFailType.WifiNotEnable)
+            callConnectFail(ConnectFailType.WifiNotEnable)
             return
         }
 
         if (ssid.trim().isEmpty()) {
             DefaultLogger.warning(message = " 输入的ssid 是空的 ")
-            mConnectCallback?.callConnectFail(ConnectFailType.SsidInvalid)
+            callConnectFail(ConnectFailType.SsidInvalid)
             return
         }
 
         if (cipherType != NO_PASS && pwd.isNullOrEmpty()) {
             DefaultLogger.warning(message = "加密模式下，密码不能为空 ")
-            mConnectCallback?.callConnectFail(ConnectFailType.EncryptionPasswordNotNull)
+            callConnectFail(ConnectFailType.EncryptionPasswordNotNull)
             return
         }
 
         if (pwd != null && !WifiUtil.isTextAsciiEncode(pwd)) {
             DefaultLogger.warning(message = " 密码必须是ASCII")
-            mConnectCallback?.callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
+            callConnectFail(ConnectFailType.PasswordMustASCIIEncoded)
             return
         }
 
         val wifiInfo = WifiUtil.getWifiInfo(getWifiManager())
-        if (wifiInfo.ipAddress != 0 && wifiInfo.ssid.replace("\"", "") == ssid) {
+        if (wifiInfo.ssid.replace("\"", "") == mTargetSSID) {
             val wifiConnectedInfo = WifiConnectInfo().apply {
                 name = ssid
                 ip = WifiUtil.getIpAddress(getWifiManager())
                 gateWay = WifiUtil.getGateway(getWifiManager())
             }
-            mConnectCallback?.callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
+            DefaultLogger.warning(message = "待连接的WIFI 已连接")
+            callConnectFail(ConnectFailType.SSIDConnected(wifiConnectedInfo))
             return
         }
+
         connect()
     }
 
+    /**
+     *
+     */
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun connect() {
+        DefaultLogger.debug(message = "开始连接wifi...")
         mConnectCallback?.callConnectStart()
 
         val builder = WifiNetworkSpecifier.Builder()
@@ -164,11 +186,15 @@ class WifiConnectRequestQ : BaseRequest() {
             .removeCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .setNetworkSpecifier(wifiNetworkSpecifier)
             .build()
-        mConnectivityManager =
-            getApplication().getSystemService(AppCompatActivity.CONNECTIVITY_SERVICE) as ConnectivityManager
+        (this.getApplication().getSystemService(AppCompatActivity.CONNECTIVITY_SERVICE) as ConnectivityManager).also {
+            mConnectivityManager = it
+        }
+
+        unregisterNetwork()
 
         // 连接wifi
         mConnectivityManager?.requestNetwork(request, mNetworkCallback)
+        isNetworkCallbackRegistered.set(true)
     }
 
 
@@ -178,14 +204,43 @@ class WifiConnectRequestQ : BaseRequest() {
 
     override fun release() {
         removeCallback()
+        unregisterNetwork()
+    }
 
-        mConnectivityManager?.unregisterNetworkCallback(mNetworkCallback)
-
+    /**
+     *  取消注册NetworkCallback，会断开连接
+     *
+     *  需和 requestNetwork 成对出现。 未requestNetwork先unregisterNetworkCallback会报错
+     */
+    private fun unregisterNetwork() {
+        if (isNetworkCallbackRegistered.get()) {
+            mConnectivityManager?.let {
+                it.unregisterNetworkCallback(mNetworkCallback)
+                isNetworkCallbackRegistered.set(false)
+            }
+        }
     }
 
     /**
      * WIFI 是否开启
      */
     private fun isWifiEnable() = getWifiManager().isWifiEnabled
+
+
+    /**
+     *  回调 连接成功
+     */
+    private fun callConnectSuccess(connectedInfo: WifiConnectInfo) {
+        mConnectCallback?.callConnectSuccess(connectedInfo)
+        removeCallback()
+    }
+
+    /**
+     * 回调 连接失败
+     */
+    private fun callConnectFail(failType: ConnectFailType) {
+        mConnectCallback?.callConnectFail(failType)
+        removeCallback()
+    }
 
 }

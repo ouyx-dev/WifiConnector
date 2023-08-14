@@ -72,7 +72,20 @@
     <TextView
             android:id="@+id/txt_log"
             android:layout_width="match_parent"
-            android:layout_height="120dp" />
+            android:layout_height="80dp" />
+
+
+    <Button
+            android:id="@+id/btn_get_connected_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="获取当前连接WiFi信息"
+            tools:ignore="HardcodedText" />
+
+    <TextView
+            android:id="@+id/txt_log_wifiinfo"
+            android:layout_width="match_parent"
+            android:layout_height="50dp" />
 
 
     <Button
@@ -84,14 +97,45 @@
     <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recy"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="150dp" />
 
 
     <Button
-            android:id="@+id/but_test"
+            android:id="@+id/but_listen_wifi"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="测试" />
+            android:text="监听WiFi连接" />
+
+    <Button
+            android:id="@+id/but_cancel_listen_wifi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="取消监听Wifi连接状态" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        <TextView
+                android:id="@+id/tv_tip"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                android:layout_marginStart="16dp"
+                android:text="WiFi是否连接：" />
+
+        <ImageView
+                android:id="@+id/img_wifi_state"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                app:layout_constraintStart_toEndOf="@id/tv_tip"
+                android:layout_marginStart="12dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                android:src="@drawable/offline_circle" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 
 </LinearLayout>

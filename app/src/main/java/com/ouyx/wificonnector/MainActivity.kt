@@ -2,14 +2,8 @@ package com.ouyx.wificonnector
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.net.ConnectivityManager
-import android.net.ConnectivityManager.NetworkCallback
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ouyx.wificonnector.data.ConnectFailType
@@ -94,6 +88,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
                 })
         }
 
+        viewBinding.btnGetConnectedInfo.setOnClickListener {
+
+            val connectInfo = WifiConnector.get().getConnectedInfo()
+            viewBinding.txtLogWifiinfo.text = connectInfo.toString()
+
+
+        }
+
         mListAdapter.setOnItemClickListener { _, _, position ->
             val wifiScanItem = mListAdapter.data[position]
             viewBinding.editSsid.setText(wifiScanItem.ssid)
@@ -106,12 +108,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
             }
         }
 
-        viewBinding.butTest.setOnClickListener {
-            test()
+        viewBinding.butListenWifi.setOnClickListener {
+            WifiConnector.get().setWifiConnectionStatusListener {
+                onConnected {
+                    log.info(message = "连接上WiFi设备 $it")
+                    viewBinding.imgWifiState.setImageResource(R.drawable.online_circle)
+                }
+                onDisConnected {
+                    log.info(message = "WiFi设备断开")
+                    viewBinding.imgWifiState.setImageResource(R.drawable.offline_circle)
+                }
+            }
         }
 
-
-        test()
+        viewBinding.butCancelListenWifi.setOnClickListener {
+            WifiConnector.get().cancelWifiConnectionStatusListener()
+        }
     }
 
 
@@ -203,46 +215,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
     private fun getSuccessView(): View {
         val scanningSuccessBinding = ScanningSuccessBinding.inflate(layoutInflater)
         return scanningSuccessBinding.root
-    }
-
-
-    private fun test() {
-        registerNetworkCallback()
-    }
-
-
-    private lateinit var networkCallback: NetworkCallback
-    private fun registerNetworkCallback() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-
-            // 创建网络请求
-            val builder = NetworkRequest.Builder()
-            builder.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-
-            // 创建网络回调
-            networkCallback = object : NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    log.debug(message = "onAvailable: WiFi connected")
-                    // WiFi已连接
-                }
-
-                override fun onLost(network: Network) {
-                    log.debug(message = "onLost: WiFi disconnected")
-                    // WiFi已断开连接
-                }
-            }
-
-            // 注册网络回调
-            connectivityManager.registerNetworkCallback(builder.build(), networkCallback)
-        }
-    }
-
-    private fun unregisterNetworkCallback() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-            connectivityManager.unregisterNetworkCallback(networkCallback)
-        }
     }
 
     override fun onDestroy() {

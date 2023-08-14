@@ -82,8 +82,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
     private val mWifiConnectBroadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent?.let {
-                val action = intent.action
-                if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+                if (intent.action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
                     val networkState =
                         (intent.getParcelableExtra<Parcelable>(WifiManager.EXTRA_NETWORK_INFO) as NetworkInfo).detailedState
                     handleNetState(networkState)
@@ -168,9 +167,9 @@ class WifiConnectRequest private constructor() : BaseRequest() {
             }
         }
 
-        mConnectJob?.invokeOnCompletion { it ->
+        mConnectJob?.invokeOnCompletion { throwable ->
             isConnecting.set(false)
-            when (it) {
+            when (throwable) {
                 is TimeoutCancellationException -> {
                     DefaultLogger.debug(message = "超时而取消")
                     mConnectCallback?.callConnectFail(ConnectFailType.ConnectTimeout)
@@ -183,7 +182,7 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                 }
 
                 is CancelReason -> {
-                    when (it) {
+                    when (throwable) {
                         CancelReason.CancelByChoice -> {
                             DefaultLogger.debug(message = "用户主动取消")
                             mConnectCallback?.callConnectFail(ConnectFailType.CancelByChoice)
@@ -194,8 +193,8 @@ class WifiConnectRequest private constructor() : BaseRequest() {
                         }
 
                         is CancelReason.CancelBySuccess -> {
-                            DefaultLogger.debug(message = "连接成功而取消任务：" + it.wifiConnectInfo.toString())
-                            mConnectCallback?.callConnectSuccess(it.wifiConnectInfo)
+                            DefaultLogger.debug(message = "连接成功而取消任务：" + throwable.wifiConnectInfo.toString())
+                            mConnectCallback?.callConnectSuccess(throwable.wifiConnectInfo)
                         }
                     }
                 }

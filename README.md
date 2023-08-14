@@ -101,6 +101,31 @@
 
 * onScanStart onScanSuccess  onScanFail 在主线程
 
+### 6.获取当前连接的WiFi信息
+```
+    val connectInfo = WifiConnector.get().getConnectedInfo()
+    // connectInfo 包括 ssid 、ip 、网关地址
+    
+```
+
+### 7. 设置 WiFi连接状态 监听
+``` 
+               //设置 WiFi连接状态 监听
+               WifiConnector.get().setWifiConnectionStatusListener {
+                onConnected {
+                    log.info(message = "连接上WiFi设备 $it")                 
+                }
+                onDisConnected {
+                    log.info(message = "WiFi设备断开")                  
+                }
+            }
+            
+            //取消监听   
+            WifiConnector.get().cancelWifiConnectionStatusListener()
+
+```
+
+
 
 ### 5. 回收
     override fun onDestroy() {

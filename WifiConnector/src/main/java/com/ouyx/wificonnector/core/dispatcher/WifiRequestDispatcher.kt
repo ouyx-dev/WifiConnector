@@ -8,9 +8,11 @@ package com.ouyx.wificonnector.core.dispatcher
 import android.os.Build
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
+import com.ouyx.wificonnector.callback.listener.WifiConnectionStatusListener
 import com.ouyx.wificonnector.core.request.WifiConnectRequest
 import com.ouyx.wificonnector.core.request.WifiConnectRequestQ
 import com.ouyx.wificonnector.core.request.WifiScanRequest
+import com.ouyx.wificonnector.core.listener.WifiStatusListener
 import com.ouyx.wificonnector.data.WifiCipherType
 import com.ouyx.wificonnector.launch.WifiConnector
 import com.ouyx.wificonnector.util.DefaultLogger
@@ -32,13 +34,6 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
     internal fun getMainScope() = mainScope
 
     internal fun getIOScope() = ioScope
-
-
-
-    /**
-     *  AndroidQ之后，当前连接请求
-     */
-    private var mConnectRequestQ: WifiConnectRequestQ? = null
 
 
     companion object {
@@ -65,12 +60,9 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
     ) {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
-
-        DefaultLogger.info(message = "设备当前SDK版本 = ${Build.VERSION.SDK_INT}")
+        DefaultLogger.debug(message = "SDK版本 = ${Build.VERSION.SDK_INT}")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            mConnectRequestQ?.release()
-            mConnectRequestQ =
-                WifiConnectRequestQ().also { it.startConnect(ssid, pwd, cipherType, wifiConnectCallback) }
+            WifiConnectRequestQ.get().startConnect(ssid, pwd, cipherType, wifiConnectCallback)
         } else {
             val timeOut = timeoutInMillis ?: WifiConnector.get().getOptions().connectTimeoutMsBeforeQ
             DefaultLogger.info(message = "设置的超时时间 = $timeOut")
@@ -96,6 +88,23 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
         }
     }
 
+    /**
+     * 监听 WiFi连接状态变化
+     */
+    override fun setWifiConnectionStatusListener(connectStatueCallback: WifiConnectionStatusListener.() -> Unit) {
+        val wifiConnectionStatusListener = WifiConnectionStatusListener()
+        wifiConnectionStatusListener.connectStatueCallback()
+
+        WifiStatusListener.get().setWifiStatusListener(wifiConnectionStatusListener)
+    }
+
+    /**
+     * 移除  WiFi连接状态变化 监听
+     */
+    override fun cancelWiFiConnectionStatusListener() {
+        WifiStatusListener.get().cancelWifiStatusListener()
+    }
+
 
     /**
      *  回收所有资源
@@ -103,10 +112,11 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
     override fun release() {
         WifiScanRequest.getInstance().release()
 
-        mConnectRequestQ?.release()
-        mConnectRequestQ = null
+        WifiConnectRequestQ.get().release()
 
         WifiConnectRequest.get().release()
+
+        WifiStatusListener.get().release()
 
         mainScope.cancel()
         ioScope.cancel()
@@ -115,15 +125,18 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
         INSTANCE = null
     }
 
+
     /**
      * 解除所有 CallBack
      */
     override fun removeAllCallback() {
         WifiScanRequest.getInstance().removeCallback()
 
-        mConnectRequestQ?.removeCallback()
+        WifiConnectRequestQ.get().removeCallback()
 
         WifiConnectRequest.get().removeCallback()
+
+        WifiStatusListener.get().removeCallback()
     }
 
 }

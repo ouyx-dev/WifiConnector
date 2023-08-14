@@ -7,7 +7,9 @@ package com.ouyx.wificonnector.launch
 
 import android.app.Application
 import android.content.Context
+import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
+import androidx.appcompat.app.AppCompatActivity
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
 import com.ouyx.wificonnector.core.dispatcher.IWiFiRequestDispatcher
@@ -17,6 +19,9 @@ import com.ouyx.wificonnector.data.WifiCipherType
 import com.ouyx.wificonnector.exceptions.InitializationException
 import com.ouyx.wificonnector.util.DefaultLogger
 import com.ouyx.wificonnector.Constants.DEFAULT_CONNECT_TIMEOUT_MS_BEFORE_Q
+import com.ouyx.wificonnector.callback.listener.WifiConnectionStatusListener
+import com.ouyx.wificonnector.data.WifiConnectInfo
+import com.ouyx.wificonnector.util.WifiUtil
 
 /**
  * Wifi连接 入口
@@ -30,7 +35,11 @@ class WifiConnector private constructor() {
 
     lateinit var mWifiManager: WifiManager
 
+    lateinit var mConnectivityManager: ConnectivityManager
+
+
     private lateinit var mDispatcher: IWiFiRequestDispatcher
+
 
     private lateinit var mWiFiOptions: WiFiOptions
 
@@ -46,9 +55,11 @@ class WifiConnector private constructor() {
     fun init(application: Application, options: WiFiOptions = WiFiOptions.getDefaultWiFiOptions()) {
         mApplication = application
         mWifiManager = application.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        mConnectivityManager =
+            application.getSystemService(AppCompatActivity.CONNECTIVITY_SERVICE) as ConnectivityManager
         mDispatcher = WifiRequestDispatcher.getInstance()
         mWiFiOptions = options
-
+        DefaultLogger.warning(message = "日志开启状态: ${mWiFiOptions.isDebug}")
         DefaultLogger.setDebug(mWiFiOptions.isDebug)
 
     }
@@ -77,9 +88,24 @@ class WifiConnector private constructor() {
     ) {
         checkInitialization()
 
-        mWiFiOptions.connectTimeoutMsBeforeQ
-
         mDispatcher.connect(ssid, pwd, cipherType, timeoutInMillis, connectCallback)
+    }
+
+
+    /**
+     *  获取当前连接上的WiFi信息
+     *
+     * @return 当前连接的WiFi信息
+     */
+    fun getConnectedInfo(): WifiConnectInfo {
+        checkInitialization()
+
+        return WifiConnectInfo().apply {
+            val connectedSSID = WifiUtil.getConnectedSsid(mWifiManager)?.replace("\"", "")
+            name = connectedSSID
+            ip = WifiUtil.getIpAddress(mWifiManager)
+            gateWay = WifiUtil.getGateway(mWifiManager)
+        }
     }
 
     /**
@@ -143,5 +169,24 @@ class WifiConnector private constructor() {
             throw InitializationException()
         }
     }
+
+    /**
+     * 添加 网连接状态 监听
+     */
+    fun setWifiConnectionStatusListener(connectStatueCallback: WifiConnectionStatusListener.() -> Unit) {
+        checkInitialization()
+
+        mDispatcher.setWifiConnectionStatusListener(connectStatueCallback)
+    }
+
+    /**
+     *  取消 网络状态 监听
+     */
+    fun cancelWifiConnectionStatusListener() {
+        checkInitialization()
+
+        mDispatcher.cancelWiFiConnectionStatusListener()
+    }
+
 
 }

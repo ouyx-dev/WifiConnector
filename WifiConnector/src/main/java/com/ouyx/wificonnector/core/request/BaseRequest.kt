@@ -17,7 +17,6 @@ import com.ouyx.wificonnector.launch.WifiConnector
  */
 abstract class BaseRequest {
 
-    fun getWifiConnector() = WifiConnector.get()
 
     fun getApplication() = WifiConnector.get().mApplication
 

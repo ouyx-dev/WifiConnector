@@ -7,6 +7,7 @@ package com.ouyx.wificonnector.core.dispatcher
 
 import com.ouyx.wificonnector.callback.WifiConnectCallback
 import com.ouyx.wificonnector.callback.WifiScanCallback
+import com.ouyx.wificonnector.callback.listener.WifiConnectionStatusListener
 import com.ouyx.wificonnector.data.ConnectFailType
 import com.ouyx.wificonnector.data.WifiCipherType
 
@@ -26,7 +27,7 @@ interface IWiFiRequestDispatcher {
         pwd: String?,
         cipherType: WifiCipherType = WifiCipherType.WEP,
         timeoutInMillis: Long?,
-        connectCallback: WifiConnectCallback.() -> Unit
+        connectCallback: WifiConnectCallback.() -> Unit,
     )
 
     /**
@@ -55,6 +56,16 @@ interface IWiFiRequestDispatcher {
      */
     fun release()
 
+
+    /**
+     * 监听 WiFi连接状态变化
+     */
+    fun setWifiConnectionStatusListener(connectStatueCallback: WifiConnectionStatusListener.() -> Unit)
+
+    /**
+     * 移除 WiFi连接状态变化
+     */
+    fun cancelWiFiConnectionStatusListener()
 
 
 }

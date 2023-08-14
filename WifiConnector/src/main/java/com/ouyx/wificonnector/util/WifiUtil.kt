@@ -11,9 +11,12 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
+import androidx.appcompat.app.AppCompatActivity
 import com.ouyx.wificonnector.data.WiFiStrength
 import com.ouyx.wificonnector.data.WifiCipherType
 import java.net.InetAddress
@@ -117,7 +120,7 @@ object WifiUtil {
         return try {
             InetAddress.getByAddress(addressBytes)
         } catch (e: UnknownHostException) {
-            throw AssertionError()
+            throw AssertionError("hostAddress:$hostAddress 无法转换为InetAddress")
         }
     }
 
@@ -144,7 +147,6 @@ object WifiUtil {
         intToInetAddress(wifiManager.connectionInfo.ipAddress)?.hostAddress
 
 
-
     /**
      * 获取网关地址
      */
@@ -161,6 +163,7 @@ object WifiUtil {
     fun getConnectedSsid(wifiManager: WifiManager): String? {
         val wifiInfo = wifiManager.connectionInfo
         var connectedWifiSSID = wifiInfo.ssid
+
         val networkId = wifiInfo.networkId
         val configuredNetworks = wifiManager.configuredNetworks
         for (wifiConfiguration in configuredNetworks) {
@@ -170,6 +173,21 @@ object WifiUtil {
             }
         }
         return connectedWifiSSID
+    }
+
+
+    /**
+     * 判断 是否 TRANSPORT_WIFI的能力
+     *
+     * 调用  connectivityManager.activeNetwork 需要在清单文件声明 Normal Permission android.permission.ACCESS_NETWORK_STATE
+     */
+    fun isConnected(application: Application): Boolean {
+        val connectivityManager =
+            application.getSystemService(AppCompatActivity.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val currentNetwork = connectivityManager.activeNetwork
+        val caps = connectivityManager.getNetworkCapabilities(currentNetwork)
+        return caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+
     }
 
 
