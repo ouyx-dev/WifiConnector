@@ -127,7 +127,7 @@
 
 
 
-### 5. 回收
+### 8. 回收
     override fun onDestroy() {
         super.onDestroy()
         WifiConnector.get().release()
