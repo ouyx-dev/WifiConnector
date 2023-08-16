@@ -44,8 +44,19 @@
 
 ### 3. 初始化
     
-    WifiConnector.get().init(application)
-
+    val options =
+    WiFiOptions.Builder()
+    //是否开启调试，默认为false
+    .setDebug(true)
+    // 设置超时时间，只对 Android Q 之前连接API 起作用
+    .connectTimeoutMsBeforeQ(6000)
+    //是否强行使用Android Q 之前Wifi连接API，比如WifiManager.enableNetwork
+    // Android Q 及之后 连接API连接成功后 测试的小米 一加设备无法上网 无法建立连接
+    //使用 29之前连接API后, targetSdk 版本要设置为 29之前，否则 WifiManager.enableNetwork 总是会返回false
+    .isAndroidQAndEarlierConnectivityAPI(true)
+    .build()
+    WifiConnector.get().init(application, options = options)
+    
 
 ### 4. 连接
 
@@ -75,6 +86,7 @@
 
 * Android Q 之前使用 WifiManager.enableNetwork API连接 ，支持超时、连接过程中用户主动取消 
 * Android Q 及之后 使用 requestNetwork 连接，因为系统会提供弹框或者系统界面来辅助连接所以不支持超时和用户主动取消连接
+* 如需连上WiFi后建立连接，建议开启 isAndroidQAndEarlierConnectivityAPI,targetSdk设置为29之前
 * 支持 WAP2 WAP3  WEP NO_PASS, 默认WPA2
 * onConnectStart  onConnectSuccess onConnectFail 都在主线程
 

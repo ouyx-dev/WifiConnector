@@ -9,7 +9,7 @@ package com.ouyx.wificonnector
  */
 object Constants {
 
-    const val DEFAULT_IS_DEBUG = true
+    const val DEFAULT_IS_DEBUG = false
 
     /**
      *  Android Q 之前 连接超时 默认时间

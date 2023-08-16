@@ -35,7 +35,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>(ActivityMainBinding::infl
         }
 
 
-        val options = WiFiOptions.Builder().setDebug(true).connectTimeoutMsBeforeQ(6000).build()
+        val options =
+            WiFiOptions.Builder().setDebug(true).connectTimeoutMsBeforeQ(10000)
+                .isAndroidQAndEarlierConnectivityAPI(true)
+                .build()
         WifiConnector.get().init(application, options = options)
 
         viewBinding.radiosCipher.setOnCheckedChangeListener { _, checkedId ->

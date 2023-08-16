@@ -24,6 +24,14 @@ class WiFiOptions private constructor(builder: Builder) {
      */
     val connectTimeoutMsBeforeQ = builder.connectTimeOutMsBeforeQ
 
+    /**
+     * 连接 WiFi API 否强行使用 Android Q 之前的 API,如 WifiManager.enableNetwork
+     *
+     * 因为 Android Q 及之后 API连接成功后 无法上网 无法建立连接
+     * 使用 29之前连接API后, targetSdk 版本要设置为 29之前，否则 WifiManager.enableNetwork 总是会返回false
+     */
+    val isAndroidQAndEarlierConnectivityAPI = builder.isAndroidQAndEarlierConnectivityAPI
+
     companion object {
 
         @JvmStatic
@@ -36,6 +44,14 @@ class WiFiOptions private constructor(builder: Builder) {
         internal var isDebug = DEFAULT_IS_DEBUG
 
         internal var connectTimeOutMsBeforeQ = DEFAULT_CONNECT_TIMEOUT_MS_BEFORE_Q
+
+        /**
+         * 连接WiFi 是否强行使用 Android Q 之前的API
+         *
+         * 测试 小米 华为 设备 Android Q之后 API连接成功后 无法上网 无法建立连接，等待平台适配
+         * 默认为 false
+         */
+        internal var isAndroidQAndEarlierConnectivityAPI = false
 
         /**
          *  设置是否开始 debug
@@ -52,6 +68,17 @@ class WiFiOptions private constructor(builder: Builder) {
          */
         fun connectTimeoutMsBeforeQ(timeout: Long): Builder {
             this.connectTimeOutMsBeforeQ = timeout
+            return this
+        }
+
+        /**
+         * 连接 WiFi API 否强行使用 Android Q 之前的 API,如 WifiManager.enableNetwork
+         *
+         * 因为 Android Q 及之后 API连接成功后 无法上网 无法建立连接
+         * 使用 29之前连接API后, targetSdk 版本要设置为 29之前，否则 WifiManager.enableNetwork 总是会返回false
+         */
+        fun isAndroidQAndEarlierConnectivityAPI(isAndroidQAndEarlierConnectivityAPI: Boolean): Builder {
+            this.isAndroidQAndEarlierConnectivityAPI = isAndroidQAndEarlierConnectivityAPI
             return this
         }
 

@@ -60,10 +60,13 @@ class WifiRequestDispatcher : IWiFiRequestDispatcher {
     ) {
         val wifiConnectCallback = WifiConnectCallback()
         connectCallback.invoke(wifiConnectCallback)
-        DefaultLogger.debug(message = "SDK版本 = ${Build.VERSION.SDK_INT}")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val isAndroidQAndEarlierConnectivityAPI = WifiConnector.get().getOptions().isAndroidQAndEarlierConnectivityAPI
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !isAndroidQAndEarlierConnectivityAPI){
+            DefaultLogger.debug(message = "使用Android Q 以及之后连接API,SDK版本 = ${Build.VERSION.SDK_INT}")
             WifiConnectRequestQ.get().startConnect(ssid, pwd, cipherType, wifiConnectCallback)
-        } else {
+        }else{
+            DefaultLogger.debug(message = "使用Android Q 之前连接API,SDK版本 = ${Build.VERSION.SDK_INT}")
             val timeOut = timeoutInMillis ?: WifiConnector.get().getOptions().connectTimeoutMsBeforeQ
             DefaultLogger.info(message = "设置的超时时间 = $timeOut")
             WifiConnectRequest.get().startConnect(ssid, pwd, cipherType, timeOut, wifiConnectCallback)

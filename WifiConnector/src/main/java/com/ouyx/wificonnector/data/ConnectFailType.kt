@@ -31,7 +31,7 @@ sealed class ConnectFailType {
 
 
     /**
-     * 正在 连接
+     * 当前正在连接，请 稍会再连
      */
     object ConnectingInProgress : ConnectFailType()
 
